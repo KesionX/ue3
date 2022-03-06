@@ -1,0 +1,25 @@
+{
+  "name": "mini-vue",
+  "version": "1.0.0",
+  "description": "mini-vue build your own vue for learning.",
+  "main": "index.js",
+  "scripts": {
+    "build": "",
+    "dev": "tsc -w -p .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KesionX/mini-vue.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/KesionX/mini-vue/issues"
+  },
+  "homepage": "https://github.com/KesionX/mini-vue#readme",
+  "devDependencies": {
+    "eslint": "^7.32.0",
+    "typescript": "^4.6.2"
+  }
+}

@@ -1,0 +1,29 @@
+{
+    "include": ["src"],
+    "exclude": ["**/*.spec.ts", "node_modules", "dist"],
+    "compilerOptions": {
+      "target": "ES2015",
+      "module": "es2015",
+      "lib": ["dom", "es6", "ES2020"],
+      "importHelpers": false,
+      "declaration": true,
+      "sourceMap": false,
+      "rootDir": "src",
+      "outDir": "dist",
+      "strict": true,
+      "noImplicitAny": true,
+      "strictNullChecks": true,
+      "strictFunctionTypes": true,
+      "strictPropertyInitialization": true,
+      "noImplicitThis": true,
+      "alwaysStrict": true,
+      "noUnusedLocals": true,
+      "noUnusedParameters": true,
+      "noImplicitReturns": true,
+      "noFallthroughCasesInSwitch": true,
+      "moduleResolution": "node",
+      "jsx": "react",
+      "esModuleInterop": true
+    }
+  }
+  
