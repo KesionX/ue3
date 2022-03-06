@@ -1,6 +1,6 @@
 export type EffectOptions = { scheduler?: (fn: Function) => void, lazy?: boolean }
 export type EffectFunction<T> = { (): T, deps: Set<Function>[], options?: EffectOptions };
-
+export type TriggerType = 'ADD' | 'SET'
 // const data = {};
 // const objProxy = new Proxy(data, {
 //     get(target: Record<string, any>, key: string) {
@@ -15,7 +15,7 @@ export type EffectFunction<T> = { (): T, deps: Set<Function>[], options?: Effect
 // });
 
 let activeEffect: undefined | EffectFunction<any>;
-const bucket = new WeakMap<any, Map<string, Set<EffectFunction<any>>>>();
+const bucket = new WeakMap<any, Map<string | Symbol, Set<EffectFunction<any>>>>();
 const effectStack: EffectFunction<any>[] = [];
 
 export function effect<T>(fn: () => T, options?: EffectOptions) {
@@ -51,7 +51,7 @@ function cleanup<T>(effectFn: EffectFunction<T>) {
     effectFn.deps.length = 0;
 }
 
-export function track(target: Record<string, any>, key: string) {
+export function track(target: Record<string, any>, key: string | Symbol) {
     if (!activeEffect) return;
     // data or props
     let depsMap = bucket.get(target);
@@ -69,19 +69,35 @@ export function track(target: Record<string, any>, key: string) {
     activeEffect.deps.push(deps);
 }
 
-export function trigger(target: Record<string, any>, key: string) {
+export function trigger(target: Record<string, any>, key: string, ITERATE_KEY?: Symbol, type?: TriggerType) {
     const depsMap = bucket.get(target);
     if (!depsMap) return;
     // 获取对应值的所有 effects
     const effects: Set<EffectFunction<any>> | undefined = depsMap.get(key);
 
+    // 取得与ITERATE_KEY关联的副作用函数
+    let iterateEffects: Set<EffectFunction<any>> | undefined;
+    if (ITERATE_KEY) {
+        iterateEffects = depsMap.get(ITERATE_KEY);
+    }
+
     // 分支--防止无限循环
-    const effectsToRun = new Set(effects);
-    effectsToRun.forEach((effectFn) => {
-        // 防止类似obj.count++问题
-        if (activeEffect === effectFn) {    
-            return;
+    const effectsToRun = new Set<EffectFunction<any>>();
+
+    effects && effects.forEach(effectFn => {
+        if (activeEffect !== effectFn) {
+            effectsToRun.add(effectFn);
         }
+    });
+
+    // 只有当add的时候才触发 ITERATE_KEY 副作用函数
+    type === 'ADD' && iterateEffects && iterateEffects.forEach(effectFn => {
+        if (activeEffect !== effectFn) {
+            effectsToRun.add(effectFn);
+        }
+    })
+
+    effectsToRun.forEach((effectFn) => {
         // 调度器执行
         if (effectFn?.options?.scheduler) {
             effectFn?.options.scheduler(effectFn);
