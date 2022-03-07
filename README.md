@@ -7,3 +7,7 @@ Mini-vue build your own vue for learning. The code is written based on "《ue.js
 - Help you understand the design and implementation principles of vue in a simple way.
 - Complete implementation code with type hints.
 - I am currently working on the documentation and hope to have a more detailed implementation document.
+
+## License
+
+[MIT](https://github.com/KesionX/mini-vue/blob/main/LICENSE)
