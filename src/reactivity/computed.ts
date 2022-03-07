@@ -1,22 +1,4 @@
-import { effect, track, trigger } from "./effect";
-
-// const data = { count: 1 };
-// const objProxy = new Proxy(data, {
-//     get(target: Record<string, any>, key: string) {
-//         track(target, key);
-//         return target[key];
-//     },
-//     set(target: Record<string, any>, key: string, val: any) {
-//         target[key] = val;
-//         trigger(target, key);
-//         return true;
-//     }
-// });
-
-// const kk = computed(() => {
-//     return data.count;
-// })
-
+import { effect, track, trigger } from "./effect.js";
 
 export function computed<T>(getting: () => T) {
     let value: T;
@@ -26,7 +8,7 @@ export function computed<T>(getting: () => T) {
         scheduler() {
             if (!dirty) {
                 dirty = true;
-                trigger(obj, 'value');
+                trigger(obj, "value");
             }
         }
     });
@@ -36,12 +18,12 @@ export function computed<T>(getting: () => T) {
         // 只有当读取改值的时候才会执行effectFn
         get value() {
             if (dirty) {
-               value = effectFn(); 
-               dirty = false
+                value = effectFn();
+                dirty = false;
             }
-            track(obj, 'value');
+            track(obj, "value");
             return value;
         }
-    }
+    };
     return obj;
 }

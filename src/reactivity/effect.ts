@@ -1,21 +1,16 @@
-export type EffectOptions = { scheduler?: (fn: Function) => void, lazy?: boolean }
-export type EffectFunction<T> = { (): T, deps: Set<Function>[], options?: EffectOptions };
-export type TriggerType = 'ADD' | 'SET'
-// const data = {};
-// const objProxy = new Proxy(data, {
-//     get(target: Record<string, any>, key: string) {
-//         track(target, key);
-//         return target[key];
-//     },
-//     set(target: Record<string, any>, key: string, val: any) {
-//         target[key] = val;
-//         trigger(target, key);
-//         return true;
-//     }
-// });
+export type EffectOptions = {
+    scheduler?: (fn: Function) => void;
+    lazy?: boolean;
+};
+export type EffectFunction<T> = {
+    (): T;
+    deps: Set<Function>[];
+    options?: EffectOptions;
+};
+export type TriggerType = "ADD" | "SET" | "DELETE";
 
 let activeEffect: undefined | EffectFunction<any>;
-const bucket = new WeakMap<any, Map<string | Symbol, Set<EffectFunction<any>>>>();
+const bucket = new WeakMap<any, Map<PropertyKey, Set<EffectFunction<any>>>>();
 const effectStack: EffectFunction<any>[] = [];
 
 export function effect<T>(fn: () => T, options?: EffectOptions) {
@@ -29,7 +24,7 @@ export function effect<T>(fn: () => T, options?: EffectOptions) {
         effectStack.pop();
         activeEffect = effectStack[effectStack.length - 1];
         return res;
-    }
+    };
     effectFn.deps = [] as Set<Function>[];
     effectFn.options = options;
     if (!options?.lazy) {
@@ -41,7 +36,7 @@ export function effect<T>(fn: () => T, options?: EffectOptions) {
 /**
  * 清除之前的绑定，用于刷新绑定effect
  * 可解决分支切换问题、比如三元
- * @param effectFn 
+ * @param effectFn
  */
 function cleanup<T>(effectFn: EffectFunction<T>) {
     for (let index = 0; index < effectFn.deps.length; index++) {
@@ -51,7 +46,7 @@ function cleanup<T>(effectFn: EffectFunction<T>) {
     effectFn.deps.length = 0;
 }
 
-export function track(target: Record<string, any>, key: string | Symbol) {
+export function track(target: Record<string, any>, key: PropertyKey) {
     if (!activeEffect) return;
     // data or props
     let depsMap = bucket.get(target);
@@ -61,7 +56,7 @@ export function track(target: Record<string, any>, key: string | Symbol) {
     // 属性值对应的set，set里可能存在多个effect函数
     let deps: Set<EffectFunction<any>> | undefined = depsMap.get(key);
     if (!deps) {
-        depsMap.set(key, (deps) = new Set());
+        depsMap.set(key, (deps = new Set()));
     }
     // 属性对应的effect函数、effect可能存在多个、同个则覆盖
     deps.add(activeEffect);
@@ -69,7 +64,12 @@ export function track(target: Record<string, any>, key: string | Symbol) {
     activeEffect.deps.push(deps);
 }
 
-export function trigger(target: Record<string, any>, key: string, ITERATE_KEY?: Symbol, type?: TriggerType) {
+export function trigger(
+    target: Record<string, any>,
+    key: PropertyKey,
+    ITERATE_KEY?: symbol,
+    type?: TriggerType
+) {
     const depsMap = bucket.get(target);
     if (!depsMap) return;
     // 获取对应值的所有 effects
@@ -84,25 +84,27 @@ export function trigger(target: Record<string, any>, key: string, ITERATE_KEY?: 
     // 分支--防止无限循环
     const effectsToRun = new Set<EffectFunction<any>>();
 
-    effects && effects.forEach(effectFn => {
-        if (activeEffect !== effectFn) {
-            effectsToRun.add(effectFn);
-        }
-    });
+    effects &&
+        effects.forEach(effectFn => {
+            if (activeEffect !== effectFn) {
+                effectsToRun.add(effectFn);
+            }
+        });
 
-    // 只有当add的时候才触发 ITERATE_KEY 副作用函数
-    type === 'ADD' && iterateEffects && iterateEffects.forEach(effectFn => {
-        if (activeEffect !== effectFn) {
-            effectsToRun.add(effectFn);
-        }
-    })
+    (type === "ADD" || type === "DELETE") &&
+        iterateEffects &&
+        iterateEffects.forEach(effectFn => {
+            if (activeEffect !== effectFn) {
+                effectsToRun.add(effectFn);
+            }
+        });
 
-    effectsToRun.forEach((effectFn) => {
+    effectsToRun.forEach(effectFn => {
         // 调度器执行
         if (effectFn?.options?.scheduler) {
             effectFn?.options.scheduler(effectFn);
         } else {
-            effectFn()
+            effectFn();
         }
-    })
+    });
 }

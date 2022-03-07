@@ -1,5 +1,5 @@
 export function render(vnode: VNode, container: HTMLElement): HTMLElement {
-    if (typeof vnode.tag === 'string' || vnode.tag instanceof HTMLElement) {
+    if (typeof vnode.tag === "string" || vnode.tag instanceof HTMLElement) {
         return mountElement(vnode, container);
     } else {
         return mountComponent(vnode, container);
@@ -15,24 +15,26 @@ function mountElement(vnode: VNode, container: HTMLElement) {
     // handle props
     for (const key in vnode.props) {
         // emit
-        if(/^on/.test(key)) {
-
+        if (/^on/.test(key)) {
             continue;
         }
         const attrValue = vnode.props[key];
         // juest attrvalue string
-        if (typeof attrValue === 'string') {
+        if (typeof attrValue === "string") {
             el.setAttribute(key, attrValue);
         }
         // TODO
     }
     // handle children
-    if (typeof vnode.children === 'string') {
+    if (typeof vnode.children === "string") {
         el.innerText = vnode.children;
     } else {
-        vnode.children && vnode.children.forEach(child => {
-            (el as HTMLElement).appendChild(render(child, el as HTMLElement));
-        });
+        vnode.children &&
+            vnode.children.forEach(child => {
+                (el as HTMLElement).appendChild(
+                    render(child, el as HTMLElement)
+                );
+            });
     }
 
     container.appendChild(el);

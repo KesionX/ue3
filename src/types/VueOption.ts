@@ -1,10 +1,13 @@
-declare type PropConstructor<T> = {
-    new (...args: any[]): T & object;
-} | {
-    (): T;
-} | {
-    new (...args: string[]): Function;
-};
+declare type PropConstructor<T> =
+    | {
+          new (...args: any[]): T & object;
+      }
+    | {
+          (): T;
+      }
+    | {
+          new (...args: string[]): Function;
+      };
 
 declare type DefaultFactory<T> = () => T | null | undefined;
 
@@ -29,7 +32,6 @@ declare type ComponentObjectPropsOptions<P = Data> = {
 // string[]
 declare type ComponentPropsOptions<P = Data> = ComponentObjectPropsOptions<P>;
 
-
 interface ComponentOptionsBase {
     // el
     props: ComponentPropsOptions;
@@ -42,8 +44,8 @@ declare type ComponentFunction<Props = ComponentPropsOptions> = () => VNode;
 declare type VueTag = HTMLElement | string | ComponentFunction;
 
 declare type VNode<Props = ComponentPropsOptions> = {
-    tag: VueTag,
-    props?: Props,
-    data?: Props,
-    children?: VNode[]
-}
+    tag: VueTag;
+    props?: Props;
+    data?: Props;
+    children?: VNode[];
+};
