@@ -1,4 +1,4 @@
-import { render, ref, effect, reactive } from "../dist/index.js";
+import { render, ref, effect, reactive, readonly, shallowReadonly } from "../dist/index.js";
 
 // test simple
 // render({
@@ -62,14 +62,56 @@ render({
 //     console.log('===', objA.a);
 // });
 
-const obj = {};
-const proto = { bar: 1 };
-const child = reactive(obj);
-const parent = reactive(proto);
-Object.setPrototypeOf(child, parent);
+// 原型链
+// const obj = {};
+// const proto = { bar: 1 };
+// const child = reactive(obj);
+// const parent = reactive(proto);
+// Object.setPrototypeOf(child, parent);
 
+// effect(() => {
+//     console.log('===', child.bar);
+// });
+
+// child.bar = 2;
+
+// 深响应浅响应
+// const obj = {
+//     a: {
+//         b: 1
+//     }
+// }
+// const p = reactive(obj);
+// effect(() => {
+//     console.log('===', p.a.b);
+// });
+
+// p.a.b = 2;
+
+// readonly
+// const obj = {
+//     a: {
+//         b: 1
+//     }
+// }
+// const p = readonly(obj);
+// effect(() => {
+//     console.log('===', p.a.b);
+// });
+
+// p.a.b = 2;
+
+// shallowReadonly
+const obj = {
+    a: {
+        b: 1
+    }
+}
+const p = shallowReadonly(obj);
 effect(() => {
-    console.log('===', child.bar);
+    console.log('===', p.a.b);
 });
 
-child.bar = 2;
+p.a.b = 2;
+
+console.log(obj);

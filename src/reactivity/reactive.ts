@@ -1,5 +1,5 @@
-import { getProxy } from "./get-proxy.js";
+import { createReactive } from "./create-reactive.js";
 
 export function reactive<T>(data: T) {
-    return getProxy(data);
+    return createReactive(data);
 }

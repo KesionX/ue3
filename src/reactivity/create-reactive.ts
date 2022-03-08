@@ -1,17 +1,40 @@
 import { track, trigger } from "./effect.js";
 
-export function getProxy<T extends Record<PropertyKey, any>>(data: T) {
-    const ITERATE_KEY = Symbol();
+export interface IReactiveOption {
+    isShallow?: boolean;
+    readonly?: boolean;
+}
+
+export function createReactive<T extends Record<PropertyKey, any>>(
+    data: T,
+    option?: IReactiveOption,
+    iterateKey?: symbol
+) {
+    const ITERATE_KEY = iterateKey || Symbol();
     const RAW = "__RAW__";
-    const objProxy = new Proxy<T>(data, {
+    const objProxy: any = new Proxy<T>(data, {
         get(target: T, key: PropertyKey, receiver: any) {
+            // console.log('get', target, key);
             if (key === RAW) {
                 return target;
             }
-            track(target, key);
-            return Reflect.get(target, key, receiver);
+            !option?.readonly && track(target, key);
+            const res = Reflect.get(target, key, receiver);
+            if (option?.isShallow) {
+                return res;
+            }
+            if (typeof res === "object" && res !== null) {
+                return createReactive(res, option, ITERATE_KEY);
+            }
+            return res;
         },
         set(target: T, key: PropertyKey, newVal: any, receiver: any) {
+            // console.log('set', target, key, option);
+            if (option?.readonly) {
+                console.warn(`prototype ${String(key)} is readonly.`)
+                return true;
+            }
+            // console.log('set', target, key);
             // 旧值
             const oldVal = target[key];
             const type = Object.prototype.hasOwnProperty.call(target, key)
@@ -37,6 +60,10 @@ export function getProxy<T extends Record<PropertyKey, any>>(data: T) {
             return Reflect.ownKeys(target);
         },
         deleteProperty(target: T, key: PropertyKey) {
+            if (option?.readonly) {
+                console.warn(`prototype ${String(key)} is readonly.`)
+                return true; 
+            }
             const hadKey = Object.prototype.hasOwnProperty.call(target, key);
             const res = Reflect.deleteProperty(target, key);
             if (res && hadKey) {
