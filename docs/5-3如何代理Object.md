@@ -140,3 +140,22 @@ set(target: T, key: PropertyKey, newVal: any, receiver: any) {
 
 ### 深响应与浅响应
 
+``` typescript
+get(target: T, key: PropertyKey, receiver: any) {
+    // console.log('get', target, key);
+    if (key === RAW) {
+        return target;
+    }
+    !option?.readonly && track(target, key);
+    const res = Reflect.get(target, key, receiver);
+    if (option?.isShallow) {
+        return res;
+    }
+    if (typeof res === "object" && res !== null) {
+        return createReactive(res, option, ITERATE_KEY);
+    }
+    return res;
+}
+```
+
+### readonly
