@@ -5,11 +5,31 @@ export interface IReactiveOption {
     readonly?: boolean;
 }
 
+const originMethod = Array.prototype.includes;
+const arrayInstrumentations = {
+    includes: function (...args: any[]) {
+        // @ts-ignore
+        let res = originMethod.apply(this, args)
+        if (res === false) {
+            // @ts-ignore
+            res = originMethod.apply((this as any)['__RAW__'], args);
+        }
+        return res;
+    }
+}
+
+const reactiveMap = new Map();
+
 export function createReactive<T extends Record<PropertyKey, any>>(
     data: T,
     option?: IReactiveOption,
     iterateKey?: symbol
 ) {
+
+    if (reactiveMap.has(data)) {
+        return reactiveMap.get(data);
+    }
+
     const ITERATE_KEY = iterateKey || Symbol();
     const RAW = "__RAW__";
     const objProxy: any = new Proxy<T>(data, {
@@ -18,7 +38,12 @@ export function createReactive<T extends Record<PropertyKey, any>>(
             if (key === RAW) {
                 return target;
             }
-            !option?.readonly && track(target, key);
+            if (Array.isArray(target) && arrayInstrumentations.hasOwnProperty(key)) {
+                return Reflect.get(arrayInstrumentations, key, receiver);
+            }
+
+            !option?.readonly && typeof key !== 'symbol' && track(target, key);
+
             const res = Reflect.get(target, key, receiver);
             if (option?.isShallow) {
                 return res;
@@ -31,13 +56,16 @@ export function createReactive<T extends Record<PropertyKey, any>>(
         set(target: T, key: PropertyKey, newVal: any, receiver: any) {
             // console.log('set', target, key, option);
             if (option?.readonly) {
-                console.warn(`prototype ${String(key)} is readonly.`)
+                console.warn(`prototype ${String(key)} is readonly.`);
                 return true;
             }
-            // console.log('set', target, key);
             // 旧值
             const oldVal = target[key];
-            const type = Object.prototype.hasOwnProperty.call(target, key)
+            const type = Array.isArray(target)
+                ? Number(key) < target.length
+                    ? "SET"
+                    : "ADD"
+                : Object.prototype.hasOwnProperty.call(target, key)
                 ? "SET"
                 : "ADD";
             const res = Reflect.set(target, key, newVal, receiver);
@@ -47,7 +75,7 @@ export function createReactive<T extends Record<PropertyKey, any>>(
                 // 比较新值与旧值，并且都不是NaN的时候才触发响应
                 (oldVal === oldVal || newVal === newVal)
             ) {
-                trigger(target, key, ITERATE_KEY, type);
+                trigger(target, key, ITERATE_KEY, type, newVal);
             }
             return res;
         },
@@ -56,13 +84,13 @@ export function createReactive<T extends Record<PropertyKey, any>>(
             return Reflect.has(target, key);
         },
         ownKeys(target: T) {
-            track(target, ITERATE_KEY);
+            track(target, Array.isArray(target) ? 'length' : ITERATE_KEY);
             return Reflect.ownKeys(target);
         },
         deleteProperty(target: T, key: PropertyKey) {
             if (option?.readonly) {
-                console.warn(`prototype ${String(key)} is readonly.`)
-                return true; 
+                console.warn(`prototype ${String(key)} is readonly.`);
+                return true;
             }
             const hadKey = Object.prototype.hasOwnProperty.call(target, key);
             const res = Reflect.deleteProperty(target, key);
@@ -72,6 +100,6 @@ export function createReactive<T extends Record<PropertyKey, any>>(
             return res;
         }
     });
-
+    reactiveMap.set(data, objProxy);
     return objProxy;
 }

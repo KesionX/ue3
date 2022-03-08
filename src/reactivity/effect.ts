@@ -68,7 +68,8 @@ export function trigger(
     target: Record<string, any>,
     key: PropertyKey,
     ITERATE_KEY?: symbol,
-    type?: TriggerType
+    type?: TriggerType,
+    newVal?: any,
 ) {
     const depsMap = bucket.get(target);
     if (!depsMap) return;
@@ -91,6 +92,30 @@ export function trigger(
             }
         });
 
+    // array
+    if (type === 'ADD' && Array.isArray(target)) {
+        const lengthEffects = depsMap.get('length')
+        lengthEffects &&
+        lengthEffects.forEach(effectFn => {
+            if (activeEffect !== effectFn) {
+                effectsToRun.add(effectFn);
+            }
+        });
+    }
+
+    if (Array.isArray(target) && key === 'length') {
+        depsMap.forEach((effects, key) => {
+            if ((key as number) >= (newVal as number)) {
+                effects.forEach((effectFn) => {
+                    if (activeEffect !== effectFn) {
+                        effectsToRun.add(effectFn);
+                    }
+                });
+            }
+        });
+    }
+
+    // object
     (type === "ADD" || type === "DELETE") &&
         iterateEffects &&
         iterateEffects.forEach(effectFn => {

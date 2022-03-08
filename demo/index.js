@@ -102,16 +102,44 @@ render({
 // p.a.b = 2;
 
 // shallowReadonly
-const obj = {
-    a: {
-        b: 1
-    }
-}
-const p = shallowReadonly(obj);
-effect(() => {
-    console.log('===', p.a.b);
-});
+// const obj = {
+//     a: {
+//         b: 1
+//     }
+// }
+// const p = shallowReadonly(obj);
+// effect(() => {
+//     console.log('===', p.a.b);
+// });
 
-p.a.b = 2;
+// p.a.b = 2;
 
-console.log(obj);
+// console.log(obj);
+
+// arr
+// const arr = reactive([1]);
+// effect(() => {
+//     console.log('===', arr[0]);
+// });
+// const arr = reactive([1]);
+// effect(() => {
+//     console.log('#');
+//     for (const key in arr) {
+//         console.log('===', key)
+//     }
+// });
+// arr[1] = 2;
+// arr.length = 0;
+// const arr = [{}];
+// const arrP = reactive(arr);
+// effect(() => {
+//     console.log(arr.includes(2))
+// });
+// console.log('arrP.includes(arrP[0])', arrP.includes(arrP[0]));
+
+const arr = {};
+const arrP = reactive([arr]);
+// effect(() => {
+//     console.log(arr.includes(2))
+// });
+console.log('arrP.includes(arrP[0])', arrP.includes(arr));
