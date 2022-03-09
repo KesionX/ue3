@@ -8,6 +8,13 @@ export type EffectFunction<T> = {
     options?: EffectOptions;
 };
 export type TriggerType = "ADD" | "SET" | "DELETE";
+export type TriggrtFunction = (
+    target: Record<string, any>,
+    key: PropertyKey,
+    ITERATE_KEY?: symbol,
+    type?: TriggerType,
+    newVal?: any
+) => void;
 
 let activeEffect: undefined | EffectFunction<any>;
 const bucket = new WeakMap<any, Map<PropertyKey, Set<EffectFunction<any>>>>();
@@ -69,7 +76,7 @@ export function trigger(
     key: PropertyKey,
     ITERATE_KEY?: symbol,
     type?: TriggerType,
-    newVal?: any,
+    newVal?: any
 ) {
     const depsMap = bucket.get(target);
     if (!depsMap) return;
@@ -93,20 +100,19 @@ export function trigger(
         });
 
     // array
-    if (type === 'ADD' && Array.isArray(target)) {
-        const lengthEffects = depsMap.get('length')
+    if (type === "ADD" && Array.isArray(target)) {
+        const lengthEffects = depsMap.get("length");
         lengthEffects &&
-        lengthEffects.forEach(effectFn => {
-            if (activeEffect !== effectFn) {
-                effectsToRun.add(effectFn);
-            }
-        });
+            lengthEffects.forEach(effectFn => {
+                if (activeEffect !== effectFn) {
+                    effectsToRun.add(effectFn);
+                }
+            });
     }
-
-    if (Array.isArray(target) && key === 'length') {
+    if (Array.isArray(target) && key === "length") {
         depsMap.forEach((effects, key) => {
             if ((key as number) >= (newVal as number)) {
-                effects.forEach((effectFn) => {
+                effects.forEach(effectFn => {
                     if (activeEffect !== effectFn) {
                         effectsToRun.add(effectFn);
                     }
