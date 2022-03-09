@@ -5,18 +5,22 @@ export interface IReactiveOption {
     readonly?: boolean;
 }
 
-const originMethod = Array.prototype.includes;
-const arrayInstrumentations = {
-    includes: function (...args: any[]) {
+const arrayInstrumentations: Record<string, any> = {};
+
+['includes', 'indexOf', 'lastIndexOf'].forEach((method: string) => {
+    const originMethod = (Array.prototype as any)[method];
+    arrayInstrumentations[method] = function (...args: any[]) {
         // @ts-ignore
+        // 代理对象查找
         let res = originMethod.apply(this, args)
         if (res === false) {
             // @ts-ignore
+            // 原生查找
             res = originMethod.apply((this as any)['__RAW__'], args);
         }
         return res;
     }
-}
+});
 
 const reactiveMap = new Map();
 
