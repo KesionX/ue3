@@ -137,9 +137,22 @@ render({
 // });
 // console.log('arrP.includes(arrP[0])', arrP.includes(arrP[0]));
 
-const arr = {};
-const arrP = reactive([arr]);
-// effect(() => {
-//     console.log(arr.includes(2))
-// });
-console.log('arrP.includes(arrP[0])', arrP.includes(arr));
+// const arr = {};
+// const arrP = reactive([arr]);
+// // effect(() => {
+// //     console.log(arr.includes(2))
+// // });
+// console.log('arrP.includes(arrP[0])', arrP.includes(arr));
+
+const arr = reactive([]);
+
+effect(() => {
+    arr.push(1);
+    console.log('=== 1', arr);
+});
+
+effect(() => {
+    arr.push(2);
+    console.log('=== 2', arr);
+})
+
