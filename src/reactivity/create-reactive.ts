@@ -51,6 +51,15 @@ export function createReactive<T extends Record<PropertyKey, any>>(
             if (key === RAW) {
                 return target;
             }
+
+            if ((target instanceof Set || target instanceof Map) && key === 'size') {
+                return Reflect.get(target, key, target);
+            }
+
+            if ((target instanceof Set || target instanceof Map) && key === 'delete') {
+                return target[key].bind(target);
+            }
+
             if (
                 Array.isArray(target) &&
                 arrayInstrumentations.hasOwnProperty(key)

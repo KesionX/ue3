@@ -144,15 +144,19 @@ render({
 // // });
 // console.log('arrP.includes(arrP[0])', arrP.includes(arr));
 
-const arr = reactive([]);
+// const arr = reactive([]);
+// effect(() => {
+//     arr.push(1);
+//     console.log('=== 1', arr);
+// });
 
-effect(() => {
-    arr.push(1);
-    console.log('=== 1', arr);
-});
+// effect(() => {
+//     arr.push(2);
+//     console.log('=== 2', arr);
+// })
 
-effect(() => {
-    arr.push(2);
-    console.log('=== 2', arr);
-})
 
+// set map
+const s = new Set([1, 2, 3]);
+const p = reactive(s);
+p.delete(1);
