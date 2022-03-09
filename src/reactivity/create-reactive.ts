@@ -1,4 +1,4 @@
-import { track, trigger } from "./effect.js";
+import { track, trigger, TriggerType, TriggrtFunction } from "./effect.js";
 
 export interface IReactiveOption {
     isShallow?: boolean;
@@ -21,7 +21,7 @@ const arrayInstrumentations: Record<string, any> = {};
         return res;
     };
 });
-
+// 重写 "push", "pop", "shift", "unshift", "splice"
 let shouldTrack = true;
 ["push", "pop", "shift", "unshift", "splice"].forEach((method: string) => {
     const originMethod = (Array.prototype as any)[method];
@@ -47,16 +47,49 @@ export function createReactive<T extends Record<PropertyKey, any>>(
     const ITERATE_KEY = iterateKey || Symbol();
     const objProxy: any = new Proxy<T>(data, {
         get(target: T, key: PropertyKey, receiver: any) {
-            // console.log('get', target, key);
+            console.log('get', target, key);
             if (key === RAW) {
                 return target;
             }
 
-            if ((target instanceof Set || target instanceof Map) && key === 'size') {
+            if (
+                (target instanceof Set || target instanceof Map) &&
+                key === "size"
+            ) {
+                trackEnable(key, shouldTrack, option) &&
+                    track(target, ITERATE_KEY);
                 return Reflect.get(target, key, target);
             }
 
-            if ((target instanceof Set || target instanceof Map) && key === 'delete') {
+            // || target instanceof Map
+            if (
+                (target instanceof Set) &&
+                (key === "delete" || key === 'add')
+            ) {
+                // const res = target[key].bind(target);
+                // const keyUpCase = key.toLocaleUpperCase();
+                // trigger(target, key, ITERATE_KEY, keyUpCase as TriggerType)
+                // setTimeout(() => {
+                //     const keyUpCase = key.toLocaleUpperCase();
+                // trigger(target, key, ITERATE_KEY, keyUpCase as TriggerType)
+                // });
+                // const setInstrumentations = {
+                //     add(key: any) {
+                //         const originTarget = (this as any)[RAW];
+                //         const res = originTarget.add(key);
+                //         trigger(target, key, ITERATE_KEY, 'ADD');
+                //         return res; 
+                //     }
+                // }                 
+                // let res;
+                if (key === 'add') {
+                    // res = target.add(key);
+                    // const res = setInstrumentations.add;
+                    // trigger(target, key, ITERATE_KEY, 'ADD');
+                    console.log('++++++++++ add');
+                    return getSetInstrumentations(target, ITERATE_KEY);
+                }
+
                 return target[key].bind(target);
             }
 
@@ -67,10 +100,7 @@ export function createReactive<T extends Record<PropertyKey, any>>(
                 return Reflect.get(arrayInstrumentations, key, receiver);
             }
 
-            !option?.readonly &&
-                typeof key !== "symbol" &&
-                shouldTrack &&
-                track(target, key);
+            trackEnable(key, shouldTrack, option) && track(target, key);
 
             const res = Reflect.get(target, key, receiver);
             if (option?.isShallow) {
@@ -108,7 +138,7 @@ export function createReactive<T extends Record<PropertyKey, any>>(
             return res;
         },
         has(target: T, key: PropertyKey) {
-            shouldTrack && track(target, key);
+            trackEnable(key, shouldTrack, option) && track(target, key);
             return Reflect.has(target, key);
         },
         ownKeys(target: T) {
@@ -131,4 +161,25 @@ export function createReactive<T extends Record<PropertyKey, any>>(
     });
     reactiveMap.set(data, objProxy);
     return objProxy;
+}
+
+function getSetInstrumentations(target: any, ITERATE_KEY: symbol) {
+    const setInstrumentations = {
+        add(key: any) {
+            const originTarget = (this as any)[RAW];
+            const res = originTarget.add(key);
+            trigger(target, key, ITERATE_KEY, 'ADD');
+            return res; 
+        }
+    }
+
+    return setInstrumentations.add;
+}
+
+function trackEnable(
+    key: PropertyKey,
+    shouldTrack: boolean,
+    options?: IReactiveOption
+) {
+    return !options?.readonly && typeof key !== "symbol" && shouldTrack;
 }
