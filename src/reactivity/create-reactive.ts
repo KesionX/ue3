@@ -1,4 +1,4 @@
-import { track, trigger, TriggerType, TriggrtFunction } from "./effect.js";
+import { track, trigger } from "./effect";
 
 export interface IReactiveOption {
     isShallow?: boolean;
@@ -41,17 +41,20 @@ export function createReactive<T extends Record<PropertyKey, any>>(
     option?: IReactiveOption,
     iterateKey?: symbol
 ) {
+    console.log('has map pre', data);
     if (reactiveMap.has(data)) {
+        console.log('has map', data);
         return reactiveMap.get(data);
     }
     const ITERATE_KEY = iterateKey || Symbol();
     const objProxy: any = new Proxy<T>(data, {
         get(target: T, key: PropertyKey, receiver: any) {
-            console.log('get', target, key);
+            console.log("get", target, key);
             if (key === RAW) {
                 return target;
             }
 
+            // map & set for size
             if (
                 (target instanceof Set || target instanceof Map) &&
                 key === "size"
@@ -61,38 +64,17 @@ export function createReactive<T extends Record<PropertyKey, any>>(
                 return Reflect.get(target, key, target);
             }
 
-            // || target instanceof Map
-            if (
-                (target instanceof Set) &&
-                (key === "delete" || key === 'add')
-            ) {
-                // const res = target[key].bind(target);
-                // const keyUpCase = key.toLocaleUpperCase();
-                // trigger(target, key, ITERATE_KEY, keyUpCase as TriggerType)
-                // setTimeout(() => {
-                //     const keyUpCase = key.toLocaleUpperCase();
-                // trigger(target, key, ITERATE_KEY, keyUpCase as TriggerType)
-                // });
-                // const setInstrumentations = {
-                //     add(key: any) {
-                //         const originTarget = (this as any)[RAW];
-                //         const res = originTarget.add(key);
-                //         trigger(target, key, ITERATE_KEY, 'ADD');
-                //         return res; 
-                //     }
-                // }                 
-                // let res;
-                if (key === 'add') {
-                    // res = target.add(key);
-                    // const res = setInstrumentations.add;
-                    // trigger(target, key, ITERATE_KEY, 'ADD');
-                    console.log('++++++++++ add');
-                    return getSetInstrumentations(target, ITERATE_KEY);
-                }
-
-                return target[key].bind(target);
+            // map
+            if (target instanceof Map && key === "get" || key === 'set') {
+                return getMapInstrumentations(option, ITERATE_KEY)[key];
             }
 
+            // set for delete & add
+            if (target instanceof Set && (key === "delete" || key === "add")) {
+                return getSetInstrumentations(target, ITERATE_KEY)[key];
+            }
+
+            // array 部分方法重写
             if (
                 Array.isArray(target) &&
                 arrayInstrumentations.hasOwnProperty(key)
@@ -102,6 +84,7 @@ export function createReactive<T extends Record<PropertyKey, any>>(
 
             trackEnable(key, shouldTrack, option) && track(target, key);
 
+            // object
             const res = Reflect.get(target, key, receiver);
             if (option?.isShallow) {
                 return res;
@@ -167,13 +150,61 @@ function getSetInstrumentations(target: any, ITERATE_KEY: symbol) {
     const setInstrumentations = {
         add(key: any) {
             const originTarget = (this as any)[RAW];
-            const res = originTarget.add(key);
-            trigger(target, key, ITERATE_KEY, 'ADD');
-            return res; 
+            let res;
+            if (!originTarget.has(key)) {
+                res = originTarget.add(key);
+                trigger(originTarget, key, ITERATE_KEY, "ADD");
+            }
+            return res;
+        },
+        delete(key: any) {
+            const originTarget = (this as any)[RAW];
+            const res = originTarget.delete(key);
+            if (res) {
+                trigger(target, key, ITERATE_KEY, "DELETE");
+            }
+            return res;
         }
-    }
+    };
+    return setInstrumentations;
+}
 
-    return setInstrumentations.add;
+function getMapInstrumentations(
+    option?: IReactiveOption,
+    ITERATE_KEY?: symbol
+) {
+    return {
+        get(key: any) {
+            const originTarget = (this as any)[RAW];
+            const res = originTarget.get(key);
+            track(originTarget, key);
+
+            if (option?.isShallow) {
+                return res;
+            }
+            if (typeof res === "object" && res !== null) {
+                return createReactive(res, option, ITERATE_KEY);
+            }
+            return res;
+        },
+        set(key: any, newVal: any) {
+            const originTarget = (this as any)[RAW];
+            const oldVal = originTarget.get(key);
+            const has = originTarget.has(key);
+            if (!has) {
+                const res = originTarget.set(key, newVal);
+                trigger(originTarget, key, ITERATE_KEY, 'ADD', newVal);
+                return res;  
+            }
+
+            if (oldVal !== newVal && has) {
+                const res = originTarget.set(key, newVal);
+                trigger(originTarget, key, ITERATE_KEY, 'SET', newVal);
+                return res;
+            }
+            return true;
+        }
+    };
 }
 
 function trackEnable(

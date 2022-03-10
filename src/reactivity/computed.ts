@@ -1,4 +1,4 @@
-import { effect, track, trigger } from "./effect.js";
+import { effect, track, trigger } from "./effect";
 
 export function computed<T>(getting: () => T) {
     let value: T;

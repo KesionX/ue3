@@ -1,4 +1,4 @@
-import { effect } from "./effect.js";
+import { effect } from "./effect";
 
 export type WatchOptions = {
     immediate?: boolean;

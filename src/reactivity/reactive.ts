@@ -1,4 +1,4 @@
-import { createReactive } from "./create-reactive.js";
+import { createReactive } from "./create-reactive";
 
 export function reactive<T>(data: T) {
     return createReactive(data);

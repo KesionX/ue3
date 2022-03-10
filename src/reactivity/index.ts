@@ -1,10 +1,10 @@
-import { createReactive } from "./create-reactive.js";
-export { reactive } from "./reactive.js";
-export { shallowReactive } from "./shallow-reactive.js";
-export { readonly } from "./readonly.js";
-export { shallowReadonly } from "./shallow-readonly.js";
-export { effect } from "./effect.js";
-export { watch } from "./watch.js";
+import { createReactive } from "./create-reactive";
+export { reactive } from "./reactive";
+export { shallowReactive } from "./shallow-reactive";
+export { readonly } from "./readonly";
+export { shallowReadonly } from "./shallow-readonly";
+export { effect } from "./effect";
+export { watch } from "./watch";
 
 export function ref(data: any) {
     return createReactive(data);
