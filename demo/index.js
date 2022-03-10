@@ -156,12 +156,25 @@ render({
 // })
 
 
-// set map
-const s = new Set([1, 2, 3]);
+// set
+// const s = new Set([1, 2, 3]);
+// const p = reactive(s);
+// effect(() => {
+//     console.log('===', p.size);
+// })
+
+// // p.add(5);
+// p.delete(1);
+
+// map
+const s = new Map([[1, { a: 1}]]);
 const p = reactive(s);
 effect(() => {
-    console.log('===', p.size);
+    console.log('effect pre', s);
+    console.log('===', p.get(1).a, p.size);
 })
 
+p.set(2, 2);
 // p.add(5);
-p.delete(1);
+// p.delete(1);
+
