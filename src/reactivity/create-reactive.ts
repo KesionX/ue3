@@ -33,21 +33,22 @@ let shouldTrack = true;
     };
 });
 
-// 防止生成多个新的代理
+/**
+ * 防止生成多个新的代理
+ *  TODO 当删除的时候需要删除此代理
+ */
 const reactiveMap = new Map();
 
 export function createReactive<T extends Record<PropertyKey, any>>(
     data: T,
     option?: IReactiveOption,
     iterateKey?: symbol
-) {
-    console.log('has map pre', data);
+): T {
     if (reactiveMap.has(data)) {
-        console.log('has map', data);
         return reactiveMap.get(data);
     }
     const ITERATE_KEY = iterateKey || Symbol();
-    const objProxy: any = new Proxy<T>(data, {
+    const objProxy: T = new Proxy<T>(data, {
         get(target: T, key: PropertyKey, receiver: any) {
             console.log("get", target, key);
             if (key === RAW) {
@@ -65,8 +66,13 @@ export function createReactive<T extends Record<PropertyKey, any>>(
             }
 
             // map
-            if (target instanceof Map && key === "get" || key === 'set') {
-                return getMapInstrumentations(option, ITERATE_KEY)[key];
+            if (
+                (target instanceof Map && key === "get") ||
+                key === "set" ||
+                key === "forEach" ||
+                key === "delete"
+            ) {
+                return getMapInstrumentations(ITERATE_KEY, option)[key];
             }
 
             // set for delete & add
@@ -169,40 +175,77 @@ function getSetInstrumentations(target: any, ITERATE_KEY: symbol) {
     return setInstrumentations;
 }
 
-function getMapInstrumentations(
-    option?: IReactiveOption,
-    ITERATE_KEY?: symbol
-) {
+function filterReactiveOrData(
+    data: any,
+    ITERATE_KEY: symbol,
+    option?: IReactiveOption
+): any {
+    if (option?.isShallow) {
+        return data;
+    }
+    if (typeof data === "object" && data !== null) {
+        return createReactive(data, option, ITERATE_KEY);
+    }
+    return data;
+}
+
+function getMapInstrumentations(ITERATE_KEY: symbol, option?: IReactiveOption) {
     return {
         get(key: any) {
             const originTarget = (this as any)[RAW];
             const res = originTarget.get(key);
             track(originTarget, key);
 
-            if (option?.isShallow) {
-                return res;
-            }
-            if (typeof res === "object" && res !== null) {
-                return createReactive(res, option, ITERATE_KEY);
-            }
-            return res;
+            return filterReactiveOrData(res, ITERATE_KEY, option);
         },
         set(key: any, newVal: any) {
             const originTarget = (this as any)[RAW];
             const oldVal = originTarget.get(key);
             const has = originTarget.has(key);
+            /**
+             * 如果newValue是响应式数据，就意味着设置到原始对象上的也是响应是数据，
+             * 我们把响应式数据设置到原始数据上的行为称为数据污染
+             */
+            const rawValue = newVal[RAW] || newVal;
             if (!has) {
-                const res = originTarget.set(key, newVal);
-                trigger(originTarget, key, ITERATE_KEY, 'ADD', newVal);
-                return res;  
+                const res = originTarget.set(key, rawValue);
+                trigger(originTarget, key, ITERATE_KEY, "ADD", rawValue);
+                return res;
             }
-
-            if (oldVal !== newVal && has) {
-                const res = originTarget.set(key, newVal);
-                trigger(originTarget, key, ITERATE_KEY, 'SET', newVal);
+            // TODO 这个判断需要测试
+            if (
+                oldVal !== rawValue &&
+                (oldVal === oldVal || rawValue === rawValue)
+            ) {
+                const res = originTarget.set(key, rawValue);
+                trigger(originTarget, key, ITERATE_KEY, "SET", rawValue);
                 return res;
             }
             return true;
+        },
+        forEach(
+            callback: (v: any, k: any, context: any) => void, thisArg: any
+        ) {
+            const originTarget = (this as any)[RAW];
+            track(originTarget, ITERATE_KEY);
+            originTarget.forEach((v: any, k: any) => {
+                callback.call(
+                    thisArg,
+                    filterReactiveOrData(v, ITERATE_KEY, option),
+                    filterReactiveOrData(k, ITERATE_KEY, option),
+                    this
+                );
+            });
+        },
+        delete(key: any) {
+            const originTarget = (this as any)[RAW];
+            const has = originTarget.has(key);
+            if (!has) {
+                return false;
+            }
+            const res = originTarget.delete(key);
+            trigger(originTarget, key, ITERATE_KEY, "DELETE");
+            return res;
         }
     };
 }

@@ -99,6 +99,17 @@ export function trigger(
             }
         });
 
+    // map
+    if (target instanceof Map && type === "SET") {
+        ITERATE_KEY &&
+            (iterateEffects = depsMap.get(ITERATE_KEY)) &&
+            iterateEffects.forEach(effectFn => {
+                if (activeEffect !== effectFn) {
+                    effectsToRun.add(effectFn);
+                }
+            });
+    }
+
     // array
     if (type === "ADD" && Array.isArray(target)) {
         const lengthEffects = depsMap.get("length");
