@@ -12,6 +12,7 @@ export type TriggrtFunction = (
     target: Record<string, any>,
     key: PropertyKey,
     ITERATE_KEY?: symbol,
+    MAP_KEY_ITERATE_KEY?: symbol,
     type?: TriggerType,
     newVal?: any
 ) => void;
@@ -75,6 +76,7 @@ export function trigger(
     target: Record<string, any>,
     key: PropertyKey,
     ITERATE_KEY?: symbol,
+    MAP_KEY_ITERATE_KEY?: symbol,
     type?: TriggerType,
     newVal?: any
 ) {
@@ -89,6 +91,11 @@ export function trigger(
         iterateEffects = depsMap.get(ITERATE_KEY);
     }
 
+    let mapKeyIterateEffects: Set<EffectFunction<any>> | undefined;
+    if (MAP_KEY_ITERATE_KEY) {
+        mapKeyIterateEffects = depsMap.get(MAP_KEY_ITERATE_KEY);
+    }
+
     // 分支--防止无限循环
     const effectsToRun = new Set<EffectFunction<any>>();
 
@@ -99,11 +106,41 @@ export function trigger(
             }
         });
 
-    // map
-    if (target instanceof Map && type === "SET") {
+    // set
+    if (
+        target instanceof Set &&
+        (type === "SET" || type === "ADD" || type === "DELETE")
+    ) {
         ITERATE_KEY &&
             (iterateEffects = depsMap.get(ITERATE_KEY)) &&
             iterateEffects.forEach(effectFn => {
+                if (activeEffect !== effectFn) {
+                    effectsToRun.add(effectFn);
+                }
+            });
+    }
+
+    // map
+    if (
+        target instanceof Map &&
+        (type === "SET" || type === "ADD" || type === "DELETE")
+    ) {
+        ITERATE_KEY &&
+            (iterateEffects = depsMap.get(ITERATE_KEY)) &&
+            iterateEffects.forEach(effectFn => {
+                if (activeEffect !== effectFn) {
+                    effectsToRun.add(effectFn);
+                }
+            });
+    }
+
+    if (
+        target instanceof Map &&
+        (type === "ADD" || type === "DELETE")
+    ) {
+        MAP_KEY_ITERATE_KEY &&
+            (mapKeyIterateEffects = depsMap.get(MAP_KEY_ITERATE_KEY)) &&
+            mapKeyIterateEffects.forEach(effectFn => {
                 if (activeEffect !== effectFn) {
                     effectsToRun.add(effectFn);
                 }
