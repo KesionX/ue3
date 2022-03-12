@@ -188,4 +188,116 @@ describe("响应式测试 => Map", function() {
         cy.wait(200);
         expect(count).to.equal(2);
     });
+
+    it("for of, 添加一个元素，并触发1次响应", function() {
+        const m = new Map([[1, 11], [2, 22]]);
+        const p = reactive(m);
+        let count = 0;
+        effect(() => {
+            count++;
+            for (const [key, value] of p) {
+                console.log(key, value);
+            }
+        });
+        p.set(3, 33);
+        expect(p.size).to.eq(3);
+        cy.wait(200);
+        expect(count).to.equal(2);
+    });
+
+    it("for of, 修改一个元素，并触发1次响应", function() {
+        const m = new Map([[1, 11], [2, 22]]);
+        const p = reactive(m);
+        let count = 0;
+        effect(() => {
+            count++;
+            for (const [key, value] of p) {
+                console.log(key, value);
+            }
+        });
+        p.set(2, 33);
+        expect(p.size).to.eq(2);
+        cy.wait(200);
+        expect(count).to.equal(2);
+    });
+
+    it("for of entries, 添加一个元素，并触发1次响应", function() {
+        const m = new Map([[1, 11], [2, 22]]);
+        const p = reactive(m);
+        let count = 0;
+        effect(() => {
+            count++;
+            for (const [key, value] of p.entries()) {
+                console.log(key, value);
+            }
+        });
+        p.set(3, 33);
+        expect(p.size).to.eq(3);
+        cy.wait(200);
+        expect(count).to.equal(2);
+    });
+
+    it("for of entries, 修改一个元素，并触发1次响应", function() {
+        const m = new Map([[1, 11], [2, 22]]);
+        const p = reactive(m);
+        let count = 0;
+        effect(() => {
+            count++;
+            for (const [key, value] of p.entries()) {
+                console.log(key, value);
+            }
+        });
+        p.set(2, 33);
+        expect(p.size).to.eq(2);
+        cy.wait(200);
+        expect(count).to.equal(2);
+    });
+
+    it("for of values, 添加一个元素，并触发1次响应", function() {
+        const m = new Map([[1, 11], [2, 22]]);
+        const p = reactive(m);
+        let count = 0;
+        effect(() => {
+            count++;
+            for (const value of p.values()) {
+                console.log(value);
+            }
+        });
+        p.set(3, 33);
+        expect(p.size).to.eq(3);
+        cy.wait(200);
+        expect(count).to.equal(2);
+    });
+
+    it("for of keys, 添加一个元素，并触发1次响应", function() {
+        const m = new Map([[1, 11], [2, 22]]);
+        const p = reactive(m);
+        let count = 0;
+        effect(() => {
+            count++;
+            for (const value of p.keys()) {
+                console.log(value);
+            }
+        });
+        p.set(3, 33);
+        expect(p.size).to.eq(3);
+        cy.wait(200);
+        expect(count).to.equal(2);
+    });
+
+    it("for of keys, 修改一个元素，不触发响应", function() {
+        const m = new Map([[1, 11], [2, 22]]);
+        const p = reactive(m);
+        let count = 0;
+        effect(() => {
+            count++;
+            for (const value of p.keys()) {
+                console.log(value);
+            }
+        });
+        p.set(2, 33);
+        expect(p.size).to.eq(2);
+        cy.wait(200);
+        expect(count).to.equal(1);
+    });
 });
