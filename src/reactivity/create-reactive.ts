@@ -42,12 +42,14 @@ const reactiveMap = new Map();
 export function createReactive<T extends Record<PropertyKey, any>>(
     data: T,
     option?: IReactiveOption,
-    iterateKey?: symbol
+    iterateKey?: symbol,
+    mapKeyIterateKey?: symbol
 ): T {
     if (reactiveMap.has(data)) {
         return reactiveMap.get(data);
     }
     const ITERATE_KEY = iterateKey || Symbol();
+    const MAP_KEY_ITERATE_KEY = mapKeyIterateKey || Symbol();
     const objProxy: T = new Proxy<T>(data, {
         get(target: T, key: PropertyKey, receiver: any) {
             console.log("get", target, key);
@@ -70,14 +72,23 @@ export function createReactive<T extends Record<PropertyKey, any>>(
                 (target instanceof Map && key === "get") ||
                 key === "set" ||
                 key === "forEach" ||
-                key === "delete"
+                key === "delete" ||
+                Object.prototype.toString.call(key) === "[object Symbol]" ||
+                key === "entries" ||
+                key === "values" ||
+                key === "keys"
             ) {
-                return getMapInstrumentations(ITERATE_KEY, option)[key];
+                // @ts-ignore
+                return getMapInstrumentations(ITERATE_KEY, getMapInstrumentations, option)[key];
             }
 
             // set for delete & add
             if (target instanceof Set && (key === "delete" || key === "add")) {
-                return getSetInstrumentations(target, ITERATE_KEY)[key];
+                return getSetInstrumentations(
+                    target,
+                    ITERATE_KEY,
+                    MAP_KEY_ITERATE_KEY
+                )[key];
             }
 
             // array 部分方法重写
@@ -96,7 +107,12 @@ export function createReactive<T extends Record<PropertyKey, any>>(
                 return res;
             }
             if (typeof res === "object" && res !== null) {
-                return createReactive(res, option, ITERATE_KEY);
+                return createReactive(
+                    res,
+                    option,
+                    ITERATE_KEY,
+                    MAP_KEY_ITERATE_KEY
+                );
             }
             return res;
         },
@@ -122,7 +138,14 @@ export function createReactive<T extends Record<PropertyKey, any>>(
                 // 比较新值与旧值，并且都不是NaN的时候才触发响应
                 (oldVal === oldVal || newVal === newVal)
             ) {
-                trigger(target, key, ITERATE_KEY, type, newVal);
+                trigger(
+                    target,
+                    key,
+                    ITERATE_KEY,
+                    MAP_KEY_ITERATE_KEY,
+                    type,
+                    newVal
+                );
             }
             return res;
         },
@@ -143,7 +166,13 @@ export function createReactive<T extends Record<PropertyKey, any>>(
             const hadKey = Object.prototype.hasOwnProperty.call(target, key);
             const res = Reflect.deleteProperty(target, key);
             if (res && hadKey) {
-                trigger(target, key, ITERATE_KEY, "DELETE");
+                trigger(
+                    target,
+                    key,
+                    ITERATE_KEY,
+                    MAP_KEY_ITERATE_KEY,
+                    "DELETE"
+                );
             }
             return res;
         }
@@ -152,14 +181,24 @@ export function createReactive<T extends Record<PropertyKey, any>>(
     return objProxy;
 }
 
-function getSetInstrumentations(target: any, ITERATE_KEY: symbol) {
+function getSetInstrumentations(
+    target: any,
+    ITERATE_KEY: symbol,
+    MAP_KEY_ITERATE_KEY: symbol
+) {
     const setInstrumentations = {
         add(key: any) {
             const originTarget = (this as any)[RAW];
             let res;
             if (!originTarget.has(key)) {
                 res = originTarget.add(key);
-                trigger(originTarget, key, ITERATE_KEY, "ADD");
+                trigger(
+                    originTarget,
+                    key,
+                    ITERATE_KEY,
+                    MAP_KEY_ITERATE_KEY,
+                    "ADD"
+                );
             }
             return res;
         },
@@ -167,7 +206,13 @@ function getSetInstrumentations(target: any, ITERATE_KEY: symbol) {
             const originTarget = (this as any)[RAW];
             const res = originTarget.delete(key);
             if (res) {
-                trigger(target, key, ITERATE_KEY, "DELETE");
+                trigger(
+                    target,
+                    key,
+                    ITERATE_KEY,
+                    MAP_KEY_ITERATE_KEY,
+                    "DELETE"
+                );
             }
             return res;
         }
@@ -178,25 +223,92 @@ function getSetInstrumentations(target: any, ITERATE_KEY: symbol) {
 function filterReactiveOrData(
     data: any,
     ITERATE_KEY: symbol,
+    MAP_KEY_ITERATE_KEY: symbol,
     option?: IReactiveOption
 ): any {
     if (option?.isShallow) {
         return data;
     }
     if (typeof data === "object" && data !== null) {
-        return createReactive(data, option, ITERATE_KEY);
+        return createReactive(data, option, ITERATE_KEY, MAP_KEY_ITERATE_KEY);
     }
     return data;
 }
 
-function getMapInstrumentations(ITERATE_KEY: symbol, option?: IReactiveOption) {
+function iteratorMethod(
+    this: any,
+    ITERATE_KEY: symbol,
+    MAP_KEY_ITERATE_KEY: symbol,
+    methodType: "values" | "keys" | "iterator",
+    option?: IReactiveOption
+) {
+    const originTarget = (this as any)[RAW];
+    const itr =
+        methodType === "values"
+            ? originTarget.values()
+            : methodType === "keys"
+            ? originTarget.keys()
+            : originTarget[Symbol.iterator]();
+    methodType !== "keys"
+        ? track(originTarget, ITERATE_KEY)
+        : track(originTarget, MAP_KEY_ITERATE_KEY);
+    return {
+        next() {
+            const { value, done } = itr.next();
+            if (methodType === "keys" || methodType === "values") {
+                return {
+                    value: filterReactiveOrData(
+                        value,
+                        ITERATE_KEY,
+                        MAP_KEY_ITERATE_KEY,
+                        option
+                    ),
+                    done
+                };
+            }
+            return {
+                value: value
+                    ? [
+                          filterReactiveOrData(
+                              value[0],
+                              ITERATE_KEY,
+                              MAP_KEY_ITERATE_KEY,
+                              option
+                          ),
+                          filterReactiveOrData(
+                              value[1],
+                              ITERATE_KEY,
+                              MAP_KEY_ITERATE_KEY,
+                              option
+                          )
+                      ]
+                    : value,
+                done
+            };
+        },
+        [Symbol.iterator]() {
+            return this;
+        }
+    };
+}
+
+function getMapInstrumentations(
+    ITERATE_KEY: symbol,
+    MAP_KEY_ITERATE_KEY: symbol,
+    option?: IReactiveOption
+) {
     return {
         get(key: any) {
             const originTarget = (this as any)[RAW];
             const res = originTarget.get(key);
             track(originTarget, key);
 
-            return filterReactiveOrData(res, ITERATE_KEY, option);
+            return filterReactiveOrData(
+                res,
+                ITERATE_KEY,
+                MAP_KEY_ITERATE_KEY,
+                option
+            );
         },
         set(key: any, newVal: any) {
             const originTarget = (this as any)[RAW];
@@ -209,7 +321,14 @@ function getMapInstrumentations(ITERATE_KEY: symbol, option?: IReactiveOption) {
             const rawValue = newVal[RAW] || newVal;
             if (!has) {
                 const res = originTarget.set(key, rawValue);
-                trigger(originTarget, key, ITERATE_KEY, "ADD", rawValue);
+                trigger(
+                    originTarget,
+                    key,
+                    ITERATE_KEY,
+                    MAP_KEY_ITERATE_KEY,
+                    "ADD",
+                    rawValue
+                );
                 return res;
             }
             // TODO 这个判断需要测试
@@ -218,21 +337,39 @@ function getMapInstrumentations(ITERATE_KEY: symbol, option?: IReactiveOption) {
                 (oldVal === oldVal || rawValue === rawValue)
             ) {
                 const res = originTarget.set(key, rawValue);
-                trigger(originTarget, key, ITERATE_KEY, "SET", rawValue);
+                trigger(
+                    originTarget,
+                    key,
+                    ITERATE_KEY,
+                    MAP_KEY_ITERATE_KEY,
+                    "SET",
+                    rawValue
+                );
                 return res;
             }
             return true;
         },
         forEach(
-            callback: (v: any, k: any, context: any) => void, thisArg: any
+            callback: (v: any, k: any, context: any) => void,
+            thisArg: any
         ) {
             const originTarget = (this as any)[RAW];
             track(originTarget, ITERATE_KEY);
             originTarget.forEach((v: any, k: any) => {
                 callback.call(
                     thisArg,
-                    filterReactiveOrData(v, ITERATE_KEY, option),
-                    filterReactiveOrData(k, ITERATE_KEY, option),
+                    filterReactiveOrData(
+                        v,
+                        ITERATE_KEY,
+                        MAP_KEY_ITERATE_KEY,
+                        option
+                    ),
+                    filterReactiveOrData(
+                        k,
+                        ITERATE_KEY,
+                        MAP_KEY_ITERATE_KEY,
+                        option
+                    ),
                     this
                 );
             });
@@ -244,8 +381,51 @@ function getMapInstrumentations(ITERATE_KEY: symbol, option?: IReactiveOption) {
                 return false;
             }
             const res = originTarget.delete(key);
-            trigger(originTarget, key, ITERATE_KEY, "DELETE");
+            trigger(
+                originTarget,
+                key,
+                ITERATE_KEY,
+                MAP_KEY_ITERATE_KEY,
+                "DELETE"
+            );
             return res;
+        },
+        // for of
+        [Symbol.iterator]() {
+            return iteratorMethod.call(
+                this,
+                ITERATE_KEY,
+                MAP_KEY_ITERATE_KEY,
+                "iterator",
+                option
+            );
+        },
+        entries() {
+            return iteratorMethod.call(
+                this,
+                ITERATE_KEY,
+                MAP_KEY_ITERATE_KEY,
+                "iterator",
+                option
+            );
+        },
+        values() {
+            return iteratorMethod.call(
+                this,
+                ITERATE_KEY,
+                MAP_KEY_ITERATE_KEY,
+                "values",
+                option
+            );
+        },
+        keys() {
+            return iteratorMethod.call(
+                this,
+                ITERATE_KEY,
+                MAP_KEY_ITERATE_KEY,
+                "keys",
+                option
+            );
         }
     };
 }
