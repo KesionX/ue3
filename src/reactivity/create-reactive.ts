@@ -37,7 +37,7 @@ let shouldTrack = true;
  * 防止生成多个新的代理
  *  TODO 当删除的时候需要删除此代理
  */
-const reactiveMap = new Map();
+const reactiveMap = new WeakMap();
 
 export function createReactive<T extends Record<PropertyKey, any>>(
     data: T,

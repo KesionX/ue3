@@ -1,8 +1,12 @@
 import './VueOption';
 
+// declare const _refBrand: unique symbol;
+export interface Ref<T> {
+    value: T;
+}
 
-// declare type VueTag = HTMLElement | string;
+export type ToRef<T> = T extends Ref<any> ? T : Ref<T>
 
-// export {
-//     VueTag
-// }
+export declare type ToRefs<T = any> = {
+    [K in keyof T]: ToRef<T[K]>;
+};
