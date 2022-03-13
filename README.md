@@ -2,7 +2,7 @@
 
 # mini-vue
 
-Mini-vue 构建自己的 vue 进行学习。代码基于《ue.js 设计与实现》编写。这是一个小型的vue响应式框架，实现vue的核心原理与设计。
+Mini-vue 构建自己的 vue 进行学习，代码基于《ue.js 设计与实现》编写。这是一个小型的vue响应式框架，实现vue的核心原理与设计。
 
 ## feature
 
