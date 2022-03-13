@@ -2,13 +2,16 @@
 
 # mini-vue
 
-Mini-vue build your own vue for learning. The code is written based on "《ue.js 设计与实现》".
+Mini-vue 构建自己的 vue 进行学习。代码基于《ue.js 设计与实现》编写。这是一个小型的vue响应式框架，实现vue的核心设计与原理。
 
 ## feature
 
-- Help you understand the design and implementation principles of vue in a simple way.
-- Complete implementation code with type hints.
-- I am currently working on the documentation and hope to have a more detailed implementation document.
+目前我正在开发：
+
+- 帮助你快速了解vue的设计和实现原理。
+- 带有完整实现代码与类型提示。
+- 完整的测试脚本。
+- 我目前正在编写文档，希望有更详细的实现文档。
 
 ## License
 
