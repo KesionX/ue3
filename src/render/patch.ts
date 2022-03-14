@@ -1,7 +1,7 @@
 import { VHTMLElement, RendererAdapter } from "../types";
 
 export function patch(
-    oldVNode: VNode,
+    oldVNode: VNode | null,
     newVNode: VNode,
     container: VHTMLElement,
     adapter: RendererAdapter
@@ -18,23 +18,23 @@ function mountElement(
     container: VHTMLElement,
     adapter: RendererAdapter
 ) {
-    // const le = document.createElement(vnode.tag);
     const el = adapter.createElement(vnode.tag as string);
-
+    // handle props
+    if (vnode.props) {
+        for (const key in vnode.props) {
+            const value = vnode.props[key];
+            adapter.patchProps(el, key, null, value);
+        }
+    }
     // handle children
     if (typeof vnode.children === "string") {
-        // el.innerText = vnode.children;
         adapter.setElementText(el, vnode.children);
     } else {
-        // vnode.children &&
-        //     vnode.children.forEach(child => {
-        //         (el as HTMLElement).appendChild(
-        //             render(child, el as HTMLElement)
-        //         );
-        //     });
+        vnode.children &&
+            vnode.children.forEach(child => {
+                patch(null, child, el as VHTMLElement, adapter);
+            });
     }
-
-    // container.appendChild(el);
     adapter.insert(el, container);
     return el;
 }
