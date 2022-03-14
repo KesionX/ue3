@@ -2,6 +2,10 @@ import { reactive } from "./reactive";
 import { ToRefs, ToRef } from "../types";
 export const __V_IS_REF = "__v_isref";
 
+/**
+ * 将普通对象或原始值转为响应式对象
+ * @param data 普通对象
+ */
 export function ref(data: any) {
     const wrap = {
         value: data
@@ -12,6 +16,9 @@ export function ref(data: any) {
     return reactive(wrap);
 }
 
+/**
+ * @param obj 响应式对象
+ */
 export function toRefs<T extends Object>(obj: T) {
     const ret = {} as ToRefs<T>;
     for (const key in obj) {
@@ -20,6 +27,11 @@ export function toRefs<T extends Object>(obj: T) {
     return ret;
 }
 
+/**
+ * 转为ref
+ * @param obj 响应式对象
+ * @param key 响应式对象key
+ */
 export function toRef<T extends Object, K extends keyof T>(
     obj: T,
     key: K
