@@ -1,6 +1,7 @@
 import { VHTMLElement, RendererAdapter } from "../types";
 import { hydrate } from "./hydrate";
 import shouldSetAsProps from "../utils/should-set-as-props";
+import normalizeClass from "../utils/normalize-class";
 
 const defaultAdapter: RendererAdapter = {
     createElement(tag) {
@@ -13,7 +14,9 @@ const defaultAdapter: RendererAdapter = {
         parent.insertBefore(el, anhor);
     },
     patchProps(el: HTMLElement, key: string, _prevValue: any, nextValue: any) {
-        if (shouldSetAsProps(el, key, nextValue)) {
+        if (key === 'class') {
+            el.className = normalizeClass(nextValue);
+        } else if (shouldSetAsProps(el, key, nextValue)) {
             const type = typeof (el as any)[key];
             if (type === "boolean" && nextValue === "") {
                 (el as any)[key] = true;
