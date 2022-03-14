@@ -1,9 +1,9 @@
-import { VHTMLElement, RendererAdapter } from "../types";
+import { RendererAdapter } from "../types";
 
 export function patch(
     oldVNode: VNode | null,
     newVNode: VNode,
-    container: VHTMLElement,
+    container: HTMLElement,
     adapter: RendererAdapter
 ) {
     if (!oldVNode) {
@@ -15,7 +15,7 @@ export function patch(
 
 function mountElement(
     vnode: VNode,
-    container: VHTMLElement,
+    container: HTMLElement,
     adapter: RendererAdapter
 ) {
     const el = adapter.createElement(vnode.tag as string);
@@ -32,7 +32,7 @@ function mountElement(
     } else {
         vnode.children &&
             vnode.children.forEach(child => {
-                patch(null, child, el as VHTMLElement, adapter);
+                patch(null, child, el, adapter);
             });
     }
     adapter.insert(el, container);
