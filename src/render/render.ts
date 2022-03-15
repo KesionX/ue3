@@ -1,5 +1,7 @@
+import { VNode } from "../types/vnode";
+
 export function render(vnode: VNode, container: HTMLElement): HTMLElement {
-    if (typeof vnode.tag === "string" || vnode.tag instanceof HTMLElement) {
+    if (typeof vnode.type === "string" || vnode.type instanceof HTMLElement) {
         return mountElement(vnode, container);
     } else {
         return mountComponent(vnode, container);
@@ -7,9 +9,9 @@ export function render(vnode: VNode, container: HTMLElement): HTMLElement {
 }
 
 function mountElement(vnode: VNode, container: HTMLElement) {
-    let el = vnode.tag;
+    let el = vnode.type;
     if (!(el instanceof HTMLElement)) {
-        el = document.createElement(vnode.tag as string);
+        el = document.createElement(vnode.type as string);
     }
 
     // handle props
@@ -42,6 +44,7 @@ function mountElement(vnode: VNode, container: HTMLElement) {
 }
 
 function mountComponent(vnode: VNode, container: HTMLElement) {
-    const subtree = (vnode.tag as ComponentFunction)();
+    // @ts-ignore TODO
+    const subtree = (vnode.type as ComponentFunction)();
     return render(subtree, container);
 }
