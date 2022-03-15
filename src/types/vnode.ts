@@ -58,5 +58,5 @@ export interface VNode<Props = ComponentPropsOptions> {
     type: VueTag;
     props?: Props;
     data?: Props;
-    children?: VNode[];
+    children?: VNode[] | string;
 }
