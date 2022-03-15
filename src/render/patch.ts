@@ -1,4 +1,6 @@
 import { RendererAdapter } from "../types";
+import { VNode } from "../types/vnode";
+import { unmount } from "./unmount";
 
 export function patch(
     oldVNode: VNode | null,
@@ -6,19 +8,31 @@ export function patch(
     container: HTMLElement,
     adapter: RendererAdapter
 ) {
-    if (!oldVNode) {
-        // mount
-        mountElement(newVNode, container, adapter);
+    if (oldVNode && oldVNode.type !== newVNode.type) {
+        unmount(oldVNode);
+        oldVNode = null;
+    }
+    const { type } = newVNode;
+    if (typeof type === "string") {
+        if (!oldVNode) {
+            mountElement(newVNode, container, adapter);
+        } else {
+            patchElement(oldVNode, newVNode);
+        }
+    } else if (typeof type === "object") {
     } else {
     }
 }
+
+function patchElement(oldVNode: VNode, newVNode: VNode) {}
 
 function mountElement(
     vnode: VNode,
     container: HTMLElement,
     adapter: RendererAdapter
 ) {
-    const el = adapter.createElement(vnode.tag as string);
+    const el = adapter.createElement(vnode.type as string);
+    vnode.el = el;
     // handle props
     if (vnode.props) {
         for (const key in vnode.props) {
