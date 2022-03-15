@@ -24,8 +24,10 @@ const defaultAdapter: RendererAdapter = {
             let invoker = invokers[key];
             if (nextValue) {
                 if (!invoker) {
-                    // TODO
-                    invoker = (el as VHTMLElement)._vei[key] = (e: any) => {
+                    invoker = (el as VHTMLElement)._vei[key] = (e: Event) => {
+                        if (e.timeStamp < invoker.attached) {
+                            return;
+                        }
                         // 可能是数组事件
                         if (invoker.value instanceof Array) {
                             invoker.value.forEach((fn: any) => {
@@ -36,6 +38,7 @@ const defaultAdapter: RendererAdapter = {
                         }
                     };
                     invoker.value = nextValue;
+                    invoker.attached = performance.now();
                     el.addEventListener(name, invoker);
                 } else {
                     invoker.value = nextValue;
