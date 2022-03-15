@@ -3,6 +3,8 @@ import { hydrate } from "./hydrate";
 import shouldSetAsProps from "../utils/should-set-as-props";
 import normalizeClass from "../utils/normalize-class";
 import { patch } from "./patch";
+import { VNode } from "../types/vnode";
+import { unmount } from "./unmount";
 
 const defaultAdapter: RendererAdapter = {
     createElement(tag) {
@@ -15,7 +17,33 @@ const defaultAdapter: RendererAdapter = {
         parent.insertBefore(el, anhor);
     },
     patchProps(el: HTMLElement, key: string, _prevValue: any, nextValue: any) {
-        if (key === "class") {
+        if (/^on/.test(key)) {
+            const name = key.slice(2).toLowerCase();
+            const invokers: any =
+                (el as VHTMLElement)._vei || ((el as VHTMLElement)._vei = {});
+            let invoker = invokers[key];
+            if (nextValue) {
+                if (!invoker) {
+                    // TODO
+                    invoker = (el as VHTMLElement)._vei[key] = (e: any) => {
+                        // 可能是数组事件
+                        if (invoker.value instanceof Array) {
+                            invoker.value.forEach((fn: any) => {
+                                fn && fn(e);
+                            });
+                        } else {
+                            invoker.value(e);
+                        }
+                    };
+                    invoker.value = nextValue;
+                    el.addEventListener(name, invoker);
+                } else {
+                    invoker.value = nextValue;
+                }
+            } else if (invoker) {
+                el.removeEventListener(name, invoker);
+            }
+        } else if (key === "class") {
             el.className = normalizeClass(nextValue);
         } else if (shouldSetAsProps(el, key, nextValue)) {
             const type = typeof (el as any)[key];
@@ -32,7 +60,7 @@ const defaultAdapter: RendererAdapter = {
 };
 
 export function createRenderer(adapter: RendererAdapter) {
-    function render(vnode: VNode, container: HTMLElement) {
+    function render(vnode: VNode | null, container: HTMLElement) {
         if (vnode) {
             patch(
                 (container as VHTMLElement)._vnode,
@@ -43,7 +71,7 @@ export function createRenderer(adapter: RendererAdapter) {
         } else {
             if ((container as VHTMLElement)._vnode) {
                 // 相当于unmount
-                container.innerHTML = "";
+                unmount((container as VHTMLElement)._vnode);
             }
         }
         (container as VHTMLElement)._vnode = vnode;
