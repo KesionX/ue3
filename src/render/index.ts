@@ -1,1 +1,1 @@
-export { render } from './render'
+export { createRenderer } from './renderer'
