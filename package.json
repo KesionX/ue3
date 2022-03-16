@@ -4,7 +4,7 @@
   "description": "mini-vue build your own vue for learning.",
   "main": "index.js",
   "scripts": {
-    "build": "",
+    "build": "rollup -c rollup.config.js --watch",
     "dev": "tsc -w -p .",
     "cypress:open": "cypress open",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -21,9 +21,13 @@
   "homepage": "https://github.com/KesionX/mini-vue#readme",
   "devDependencies": {
     "@babel/types": "^7.17.0",
+    "@rollup/plugin-commonjs": "^21.0.2",
+    "@rollup/plugin-node-resolve": "^13.1.3",
+    "@rollup/plugin-typescript": "^8.3.1",
     "@types/mocha": "^9.1.0",
     "cypress": "^9.5.1",
     "eslint": "^7.32.0",
+    "rollup": "^2.70.1",
     "typescript": "^4.6.2"
   }
 }

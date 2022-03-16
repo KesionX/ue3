@@ -68,7 +68,7 @@ const defaultAdapter: RendererAdapter = {
     }
 };
 
-export function createRenderer(adapter: RendererAdapter) {
+export function createRenderer(adapter: RendererAdapter = defaultAdapter) {
     function render(vnode: VNode | null, container: HTMLElement) {
         if (vnode) {
             patch(
