@@ -52,7 +52,7 @@ export function createReactive<T extends Record<PropertyKey, any>>(
     const MAP_KEY_ITERATE_KEY = mapKeyIterateKey || Symbol();
     const objProxy: T = new Proxy<T>(data, {
         get(target: T, key: PropertyKey, receiver: any) {
-            console.log("get", target, key);
+            // console.log("get", target, key);
             if (key === RAW) {
                 return target;
             }

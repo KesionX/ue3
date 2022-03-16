@@ -1,6 +1,6 @@
 import { nodeResolve } from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
-import typescript from '@rollup/plugin-typescript';
+import typescript from "@rollup/plugin-typescript";
 
 /**
  * @type {import('rollup').RollupOptions}
@@ -11,7 +11,9 @@ const config = {
         {
             name: "es",
             dir: "dist",
-            format: "esm"
+            format: "esm",
+            preserveModules: true,
+            preserveModulesRoot: "./src"
         }
     ],
     plugins: [

@@ -17,6 +17,7 @@ export function patch(
     if (typeof type === "string") {
         if (!oldVNode) {
             // 挂载
+            console.log("~~~~~~~~~~~~~~~~~~~~ 新节点",  oldVNode,newVNode);
             mountElement(newVNode, container, adapter);
         } else {
             // 更新
@@ -27,10 +28,12 @@ export function patch(
     } else if (type === VTypeText) {
         if (!oldVNode) {
             // @ts-ignore
-            const el = newVNode.el = adapter.createText(newVNode.children as string);
+            const el = (newVNode.el = adapter.createText(
+                newVNode.children as string
+            ));
             adapter.insert(el, container);
         } else {
-            const el = newVNode.el = oldVNode.el;
+            const el = (newVNode.el = oldVNode.el);
             if (newVNode.children !== oldVNode.children) {
                 adapter.setText(el, newVNode.children as string);
             }
@@ -84,10 +87,17 @@ function patchChildren(
     if (typeof newVNode.children === "string") {
         if (oldVNode.children instanceof Array) {
             oldVNode.children.forEach(child => unmount(child));
+            adapter.setElementText(container, newVNode.children);
         }
-        adapter.setElementText(container, newVNode.children);
+        if (
+            (typeof oldVNode.children === "string" &&
+                oldVNode.children !== newVNode.children) ||
+            !newVNode.children
+        ) {
+            adapter.setElementText(container, newVNode.children);
+        }
     } else if (Array.isArray(newVNode.children)) {
-        if (Array.isArray(oldVNode)) {
+        if (Array.isArray(oldVNode.children)) {
             // 核心diff
         } else {
             adapter.setElementText(container, "");
@@ -98,8 +108,8 @@ function patchChildren(
     } else {
         if (oldVNode.children instanceof Array) {
             oldVNode.children.forEach(child => unmount(child));
-        } else if (typeof oldVNode.children === 'string') {
-            adapter.setElementText(container, '');
+        } else if (typeof oldVNode.children === "string") {
+            adapter.setElementText(container, "");
         }
     }
 }

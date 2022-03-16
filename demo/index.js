@@ -19,33 +19,55 @@ function MyComponent() {
 
 const render = createRenderer().render;
 
-render({
-    type: 'div',
-    props: {
-        style: 'color: red'
-    },
-    children: [{
-        type: 'span',
-        props: {
-            style: 'color: green'
-        },
-        children: 'hello'
-    }],
-}, document.getElementById('app'));
+// render({
+//     type: 'div',
+//     props: {
+//         style: 'color: red'
+//     },
+//     children: [{
+//         type: 'span',
+//         props: {
+//             style: 'color: green'
+//         },
+//         children: 'hello'
+//     }],
+// }, document.getElementById('app'));
 
-render({
-    type: 'div',
-    props: {
-        class: 'app-2'
-    },
-    children: [{
-        type: 'span',
+
+const count = ref(0);
+effect(() => {
+
+    render({
+        type: 'div',
         props: {
-            style: 'color: yellow'
+            class: 'app-2'
         },
-        children: 'hello'
-    }, {
-        type: 'b',
-        children: 'world'
-    }],
-}, document.getElementById('app-2'));
+        children: [{
+            type: 'span',
+            props: {
+                style: 'color: yellow'
+            },
+            children: 'hello'
+        }, {
+            type: 'b',
+            children: 'world'
+        }, {
+            type: 'div',
+            props: {
+                style: 'width: 125px; height: 125px; background: blue;',
+            },
+            children: [{
+                type: 'div',
+                children: 'k',
+            }, {
+                type: 'div',
+                children: count.value + '',
+            }]
+        }],
+    }, document.getElementById('app-2'));
+
+});
+
+// setInterval(() => {
+//     count.value = count.value + 1;
+// }, 10000);
