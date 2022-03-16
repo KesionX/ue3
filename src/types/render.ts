@@ -6,7 +6,7 @@ export interface RendererAdapter {
     /**
      * 插入
      */
-    insert: (el: HTMLElement, parent: HTMLElement, anchor?: any) => void;
+    insert: (el: HTMLElement | Text, parent: HTMLElement, anchor?: any) => void;
     /**
      * 设置元素text
      */
@@ -14,5 +14,13 @@ export interface RendererAdapter {
     /**
      * 设置属性值
      */
-    patchProps: (el: HTMLElement, key: string, prevValue: any, nextValue: any) => void; 
+    patchProps: (el: HTMLElement, key: string, prevValue: any, nextValue: any) => void;
+    /**
+     * 创建text
+     */
+    createText: (text: string) => Text;
+    /**
+     * 配置text值
+     */
+    setText: (el: HTMLElement, text: string) => void;
 }
