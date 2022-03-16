@@ -41,7 +41,7 @@ interface ComponentOptionsBase {
 }
 
 declare type ComponentFunction<Props = ComponentPropsOptions> = () => VNode;
-declare type VueTag = HTMLElement | string | ComponentFunction;
+declare type VueTag = string | ComponentFunction | symbol;
 
 export type VNodeTypes = string;
 //   | VNode
@@ -52,6 +52,12 @@ export type VNodeTypes = string;
 //   | typeof Fragment
 //   | typeof TeleportImpl
 //   | typeof SuspenseImpl
+
+export interface RendererNode {
+    [key: string]: any;
+}
+
+export interface RendererElement extends RendererNode {}
 
 export interface VNode<Props = ComponentPropsOptions> {
     el: HTMLElement;

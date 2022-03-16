@@ -1,5 +1,4 @@
 import {
-    render,
     ref,
     effect,
     reactive,
