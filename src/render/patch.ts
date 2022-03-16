@@ -1,4 +1,4 @@
-import { RendererAdapter } from "../types";
+import { Fragment, RendererAdapter, VTypeText } from "../types";
 import { VNode } from "../types/vnode";
 import { unmount } from "./unmount";
 
@@ -24,6 +24,25 @@ export function patch(
         }
     } else if (typeof type === "object") {
         // 组件
+    } else if (type === VTypeText) {
+        if (!oldVNode) {
+            // @ts-ignore
+            const el = newVNode.el = adapter.createText(newVNode.children as string);
+            adapter.insert(el, container);
+        } else {
+            const el = newVNode.el = oldVNode.el;
+            if (newVNode.children !== oldVNode.children) {
+                adapter.setText(el, newVNode.children as string);
+            }
+        }
+    } else if (type === Fragment) {
+        if (!oldVNode) {
+            (newVNode.children as VNode[]).forEach(child => {
+                patch(null, child, container, adapter);
+            });
+        } else {
+            patchChildren(oldVNode, newVNode, container, adapter);
+        }
     } else {
         // 其他
     }
