@@ -71,11 +71,16 @@ const defaultAdapter: RendererAdapter = {
 export function createRenderer(adapter: RendererAdapter = defaultAdapter) {
     function render(vnode: VNode | null, container: HTMLElement) {
         if (vnode) {
-            console.log('createRenderer', (container as VHTMLElement)._vnode, vnode);
+            console.log(
+                "createRenderer",
+                (container as VHTMLElement)._vnode,
+                vnode
+            );
             patch(
                 (container as VHTMLElement)._vnode,
                 vnode,
                 container,
+                null,
                 adapter
             );
         } else {

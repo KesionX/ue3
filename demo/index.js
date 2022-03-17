@@ -39,27 +39,33 @@ effect(() => {
 
     render({
         type: 'div',
+        key: 'div-sub1-1',
         props: {
             class: 'app-2'
         },
         children: [{
+            key: 'div-sub2-1',
             type: 'span',
             props: {
                 style: 'color: yellow'
             },
             children: 'hello'
         }, {
+            key: 'div-sub2-2',
             type: 'b',
             children: 'world'
         }, {
+            key: 'div-sub2-3',
             type: 'div',
             props: {
                 style: 'width: 125px; height: 125px; background: blue;',
             },
             children: [{
+                key: 'div-sub3-1',
                 type: 'div',
                 children: 'k',
             }, {
+                key: 'div-sub3-2',
                 type: 'div',
                 children: count.value + '',
             }]
@@ -70,4 +76,4 @@ effect(() => {
 
 setInterval(() => {
     count.value = count.value + 1;
-}, 5000);
+}, 1000);

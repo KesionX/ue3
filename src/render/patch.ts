@@ -6,6 +6,7 @@ export function patch(
     oldVNode: VNode | null,
     newVNode: VNode,
     container: HTMLElement | null,
+    anchor: ChildNode | null,
     adapter: RendererAdapter
 ) {
     if (oldVNode && oldVNode.type !== newVNode.type) {
@@ -18,7 +19,7 @@ export function patch(
         if (!oldVNode) {
             // 挂载
             console.log("~~~~~~~~~~~~~~~~~~~~ 新节点",  oldVNode,newVNode);
-            mountElement(newVNode, container, adapter);
+            mountElement(newVNode, container, anchor, adapter);
         } else {
             // 更新
             patchElement(oldVNode, newVNode, adapter);
@@ -31,7 +32,7 @@ export function patch(
             const el = (newVNode.el = adapter.createText(
                 newVNode.children as string
             ));
-            container && adapter.insert(el, container);
+            container && adapter.insert(el, container, anchor);
         } else {
             const el = (newVNode.el = oldVNode.el);
             if (newVNode.children !== oldVNode.children) {
@@ -41,7 +42,7 @@ export function patch(
     } else if (type === Fragment) {
         if (!oldVNode) {
             (newVNode.children as VNode[]).forEach(child => {
-                patch(null, child, container, adapter);
+                patch(null, child, container, null, adapter);
             });
         } else {
             patchChildren(oldVNode, newVNode, container, adapter);
@@ -105,12 +106,14 @@ function patchChildren(
             let lastIndex = 0;
             for (let i = 0; i < newChildren.length; i++) {
                 const newChild = newChildren[i];
-                for (let j = 0; j < oldChildren.length; j++) {
+                let j = 0;
+                let find = false;
+                for (; j < oldChildren.length; j++) {
                     const oldChild = oldChildren[j];
                     if (oldChild.key === newChild.key) {
-                        patch(oldChild, newChild, container, adapter);
+                        find = true;
+                        patch(oldChild, newChild, container, null, adapter);
                         if (j < lastIndex) {
-
                             const prevVNode = newChildren[i - 1];
                             if (prevVNode) {
                                 const anchor = prevVNode.el.nextSibling;
@@ -119,10 +122,20 @@ function patchChildren(
                         } else {
                             lastIndex = j;
                         }
-                        
-
                         break;
                     }
+                }
+                // 新增节点
+                if (!find) {
+                    const prevVNode = newChildren[i - 1];
+                    let anchor = null;
+                    if (prevVNode) {
+                        anchor = prevVNode.el.nextSibling;
+                    } else {
+                        anchor = container?.firstChild;
+                    }
+                    !anchor && (anchor = null);
+                    patch(null, newChild, container, anchor, adapter);
                 }
             }
 
@@ -151,7 +164,7 @@ function patchChildren(
         } else {
             container && adapter.setElementText(container, "");
             newVNode.children.forEach(child => {
-                patch(null, child, container, adapter);
+                patch(null, child, container, null, adapter);
             });
         }
     } else {
@@ -166,6 +179,7 @@ function patchChildren(
 function mountElement(
     vnode: VNode,
     container: HTMLElement | null,
+    anchor: ChildNode | null,
     adapter: RendererAdapter
 ) {
     const el = adapter.createElement(vnode.type as string);
@@ -184,9 +198,9 @@ function mountElement(
         vnode.children &&
             vnode.children.forEach(child => {
                 // TODO
-                patch(null, child, el, adapter);
+                patch(null, child, el, null, adapter);
             });
     }
-    container && adapter.insert(el, container);
+    container && adapter.insert(el, container, anchor);
     return el;
 }
