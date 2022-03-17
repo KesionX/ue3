@@ -5,7 +5,7 @@ import { unmount } from "./unmount";
 export function patch(
     oldVNode: VNode | null,
     newVNode: VNode,
-    container: HTMLElement,
+    container: HTMLElement | null,
     adapter: RendererAdapter
 ) {
     if (oldVNode && oldVNode.type !== newVNode.type) {
@@ -31,7 +31,7 @@ export function patch(
             const el = (newVNode.el = adapter.createText(
                 newVNode.children as string
             ));
-            adapter.insert(el, container);
+            container && adapter.insert(el, container);
         } else {
             const el = (newVNode.el = oldVNode.el);
             if (newVNode.children !== oldVNode.children) {
@@ -80,27 +80,76 @@ function patchElement(
 function patchChildren(
     oldVNode: VNode,
     newVNode: VNode,
-    container: HTMLElement,
+    container: HTMLElement | null,
     adapter: RendererAdapter
 ) {
     // 没有节点、文本节点、一组节点
     if (typeof newVNode.children === "string") {
         if (oldVNode.children instanceof Array) {
-            oldVNode.children.forEach(child => unmount(child));
-            adapter.setElementText(container, newVNode.children);
+            oldVNode.children.forEach(child => unmount(child))
+            container && adapter.setElementText(container, newVNode.children);
         }
         if (
             (typeof oldVNode.children === "string" &&
                 oldVNode.children !== newVNode.children) ||
             !newVNode.children
         ) {
-            adapter.setElementText(container, newVNode.children);
+            container && adapter.setElementText(container, newVNode.children);
         }
     } else if (Array.isArray(newVNode.children)) {
         if (Array.isArray(oldVNode.children)) {
             // 核心diff
+            const oldChildren = oldVNode.children;
+            const newChildren = newVNode.children;
+
+            let lastIndex = 0;
+            for (let i = 0; i < newChildren.length; i++) {
+                const newChild = newChildren[i];
+                for (let j = 0; j < oldChildren.length; j++) {
+                    const oldChild = oldChildren[j];
+                    if (oldChild.key === newChild.key) {
+                        patch(oldChild, newChild, container, adapter);
+                        if (j < lastIndex) {
+
+                            const prevVNode = newChildren[i - 1];
+                            if (prevVNode) {
+                                const anchor = prevVNode.el.nextSibling;
+                                container && adapter.insert(newChild.el, container, anchor);
+                            }
+                        } else {
+                            lastIndex = j;
+                        }
+                        
+
+                        break;
+                    }
+                }
+            }
+
+            // const oldLength = oldChildren.length;
+            // const newLength = newChildren.length;
+            // const commonLength = Math.min(oldLength, newLength);
+            // for (let i = 0; i < commonLength; i++) {
+            //     // const element = oldLength[i];
+            //     patch(oldChildren[i], newChildren[i], null, adapter);
+                
+            // }
+
+            // if (newLength > oldLength) {
+            //     for (let i = commonLength; i < newLength; i++) {
+            //         patch(null, newChildren[i], container, adapter);
+            //     }
+            // } else {
+            //     for (let i = commonLength; i < oldLength; i++) {
+            //         unmount(oldChildren[i]);
+            //     }
+            // }
+
+            // for (let index = 0; index < oldChildren.length; index++) {
+            //     patch(oldChildren[index], newChildren[index], null, adapter);
+            // }
         } else {
-            adapter.setElementText(container, "");
+            container && adapter.setElementText(container, "");
             newVNode.children.forEach(child => {
                 patch(null, child, container, adapter);
             });
@@ -109,14 +158,14 @@ function patchChildren(
         if (oldVNode.children instanceof Array) {
             oldVNode.children.forEach(child => unmount(child));
         } else if (typeof oldVNode.children === "string") {
-            adapter.setElementText(container, "");
+            container && adapter.setElementText(container, "");
         }
     }
 }
 
 function mountElement(
     vnode: VNode,
-    container: HTMLElement,
+    container: HTMLElement | null,
     adapter: RendererAdapter
 ) {
     const el = adapter.createElement(vnode.type as string);
@@ -138,6 +187,6 @@ function mountElement(
                 patch(null, child, el, adapter);
             });
     }
-    adapter.insert(el, container);
+    container && adapter.insert(el, container);
     return el;
 }

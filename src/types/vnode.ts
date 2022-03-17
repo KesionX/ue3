@@ -64,5 +64,6 @@ export interface VNode<Props = ComponentPropsOptions> {
     type: VueTag;
     props?: Props;
     data?: Props;
+    key?: string | number | symbol;
     children?: VNode[] | string;
 }

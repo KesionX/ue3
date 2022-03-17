@@ -68,6 +68,6 @@ effect(() => {
 
 });
 
-// setInterval(() => {
-//     count.value = count.value + 1;
-// }, 10000);
+setInterval(() => {
+    count.value = count.value + 1;
+}, 5000);
