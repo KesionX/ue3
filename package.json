@@ -1,7 +1,7 @@
 {
-  "name": "mini-vue",
+  "name": "ue3",
   "version": "1.0.0",
-  "description": "mini-vue build your own vue for learning.",
+  "description": "ue3 build your own vue for learning.",
   "main": "index.js",
   "scripts": {
     "build": "rollup -c rollup.config.js --watch",
@@ -11,14 +11,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/KesionX/mini-vue.git"
+    "url": "git+https://github.com/KesionX/ue3.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/KesionX/mini-vue/issues"
+    "url": "https://github.com/KesionX/ue3/issues"
   },
-  "homepage": "https://github.com/KesionX/mini-vue#readme",
+  "homepage": "https://github.com/KesionX/ue3#readme",
   "devDependencies": {
     "@babel/types": "^7.17.0",
     "@rollup/plugin-commonjs": "^21.0.2",
