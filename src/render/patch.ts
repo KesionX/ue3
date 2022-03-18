@@ -18,7 +18,7 @@ export function patch(
     if (typeof type === "string") {
         if (!oldVNode) {
             // 挂载
-            console.log("~~~~~~~~~~~~~~~~~~~~ 新节点",  oldVNode,newVNode);
+            console.log("~~~~~~~~~~~~~~~~~~~~ 新节点", oldVNode, newVNode);
             mountElement(newVNode, container, anchor, adapter);
         } else {
             // 更新
@@ -87,7 +87,7 @@ function patchChildren(
     // 没有节点、文本节点、一组节点
     if (typeof newVNode.children === "string") {
         if (oldVNode.children instanceof Array) {
-            oldVNode.children.forEach(child => unmount(child))
+            oldVNode.children.forEach(child => unmount(child));
             container && adapter.setElementText(container, newVNode.children);
         }
         if (
@@ -112,12 +112,19 @@ function patchChildren(
                     const oldChild = oldChildren[j];
                     if (oldChild.key === newChild.key) {
                         find = true;
+                        // 更新节点
                         patch(oldChild, newChild, container, null, adapter);
                         if (j < lastIndex) {
+                            // 移动节点
                             const prevVNode = newChildren[i - 1];
                             if (prevVNode) {
                                 const anchor = prevVNode.el.nextSibling;
-                                container && adapter.insert(newChild.el, container, anchor);
+                                container &&
+                                    adapter.insert(
+                                        newChild.el,
+                                        container,
+                                        anchor
+                                    );
                             }
                         } else {
                             lastIndex = j;
@@ -137,30 +144,15 @@ function patchChildren(
                     !anchor && (anchor = null);
                     patch(null, newChild, container, anchor, adapter);
                 }
+                // 移除节点
+                for (let index = 0; index < oldChildren.length; index++) {
+                    const element = oldChildren[index];
+                    const has = newChildren.find(({ key }) => element.key === key);
+                    if (!has) {
+                        unmount(element);
+                    }
+                }
             }
-
-            // const oldLength = oldChildren.length;
-            // const newLength = newChildren.length;
-            // const commonLength = Math.min(oldLength, newLength);
-            // for (let i = 0; i < commonLength; i++) {
-            //     // const element = oldLength[i];
-            //     patch(oldChildren[i], newChildren[i], null, adapter);
-                
-            // }
-
-            // if (newLength > oldLength) {
-            //     for (let i = commonLength; i < newLength; i++) {
-            //         patch(null, newChildren[i], container, adapter);
-            //     }
-            // } else {
-            //     for (let i = commonLength; i < oldLength; i++) {
-            //         unmount(oldChildren[i]);
-            //     }
-            // }
-
-            // for (let index = 0; index < oldChildren.length; index++) {
-            //     patch(oldChildren[index], newChildren[index], null, adapter);
-            // }
         } else {
             container && adapter.setElementText(container, "");
             newVNode.children.forEach(child => {
