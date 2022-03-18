@@ -1,33 +1,45 @@
 {
-  "name": "ue3",
-  "version": "1.0.0",
-  "description": "ue3 build your own vue for learning.",
-  "main": "index.js",
-  "scripts": {
-    "build": "rollup -c rollup.config.js --watch",
-    "dev": "tsc -w -p .",
-    "cypress:open": "cypress open",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/KesionX/ue3.git"
-  },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/KesionX/ue3/issues"
-  },
-  "homepage": "https://github.com/KesionX/ue3#readme",
-  "devDependencies": {
-    "@babel/types": "^7.17.0",
-    "@rollup/plugin-commonjs": "^21.0.2",
-    "@rollup/plugin-node-resolve": "^13.1.3",
-    "@rollup/plugin-typescript": "^8.3.1",
-    "@types/mocha": "^9.1.0",
-    "cypress": "^9.5.1",
-    "eslint": "^7.32.0",
-    "rollup": "^2.70.1",
-    "typescript": "^4.6.2"
-  }
+    "name": "ue3",
+    "version": "1.0.1",
+    "description": "ue3 build your own vue for learning.",
+    "main": "index.js",
+    "scripts": {
+        "build": "rollup -c rollup.config.js --watch",
+        "dev": "tsc -w -p .",
+        "cypress:open": "cypress open",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/KesionX/ue3.git"
+    },
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/KesionX/ue3/issues"
+    },
+    "keywords": [
+        "vuejs",
+        "vue2",
+        "vue3",
+        "vue",
+        "typescript",
+        "javascript",
+        "frontend",
+        "framework",
+        "ue.js",
+        "ue"
+    ],
+    "homepage": "https://github.com/KesionX/ue3#readme",
+    "devDependencies": {
+        "@babel/types": "^7.17.0",
+        "@rollup/plugin-commonjs": "^21.0.2",
+        "@rollup/plugin-node-resolve": "^13.1.3",
+        "@rollup/plugin-typescript": "^8.3.1",
+        "@types/mocha": "^9.1.0",
+        "cypress": "^9.5.1",
+        "eslint": "^7.32.0",
+        "rollup": "^2.70.1",
+        "typescript": "^4.6.2"
+    }
 }
