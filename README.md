@@ -1,8 +1,8 @@
 <p align="center"><a href="https://vuejs.org" target="_blank" rel="noopener noreferrer"><img width="100" src="https://vuejs.org/images/logo.png" alt="Vue logo"></a></p>
 
-# mini-vue
+# ue3
 
-Mini-vue 构建自己的 vue3 进行学习，代码基于《ue.js 设计与实现》编写。这是一个小型的vue3响应式框架，实现vue3的核心原理与设计。
+ue3 构建自己的 vue3 进行学习，代码基于《ue.js 设计与实现》编写。这是一个小型的vue3响应式框架，实现vue3的核心原理与设计。
 
 ## feature
 
@@ -15,4 +15,4 @@ Mini-vue 构建自己的 vue3 进行学习，代码基于《ue.js 设计与实�
 
 ## License
 
-[MIT](https://github.com/KesionX/mini-vue/blob/main/LICENSE)
+[MIT](https://github.com/KesionX/ue3/blob/main/LICENSE)
