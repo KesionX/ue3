@@ -279,7 +279,7 @@ function patchKeyedChildren(
     if (oldEndIndex < oldStartIndex && newStartIndex <= newEndIndex) {
         for (let index = newStartIndex; index <= newEndIndex; index++) {
             const element = newChildren[index];
-            patch(null, element, container, (oldStartVNode as VNode).el, adapter);
+            patch(null, element, container, oldStartVNode ? (oldStartVNode as VNode).el : null, adapter);
         }
     } else if (newEndIndex < newStartIndex && oldStartIndex <= oldEndIndex) {
         for (let index = oldStartIndex; index <= oldEndIndex; index++) {
