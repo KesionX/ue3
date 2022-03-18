@@ -100,59 +100,9 @@ function patchChildren(
     } else if (Array.isArray(newVNode.children)) {
         if (Array.isArray(oldVNode.children)) {
             // 核心diff
-            const oldChildren = oldVNode.children;
-            const newChildren = newVNode.children;
-
-            let lastIndex = 0;
-            for (let i = 0; i < newChildren.length; i++) {
-                const newChild = newChildren[i];
-                let j = 0;
-                let find = false;
-                for (; j < oldChildren.length; j++) {
-                    const oldChild = oldChildren[j];
-                    if (oldChild.key === newChild.key) {
-                        find = true;
-                        // 更新节点
-                        patch(oldChild, newChild, container, null, adapter);
-                        if (j < lastIndex) {
-                            // 移动节点
-                            const prevVNode = newChildren[i - 1];
-                            if (prevVNode) {
-                                const anchor = prevVNode.el.nextSibling;
-                                container &&
-                                    adapter.insert(
-                                        newChild.el,
-                                        container,
-                                        anchor
-                                    );
-                            }
-                        } else {
-                            lastIndex = j;
-                        }
-                        break;
-                    }
-                }
-                // 新增节点
-                if (!find) {
-                    const prevVNode = newChildren[i - 1];
-                    let anchor = null;
-                    if (prevVNode) {
-                        anchor = prevVNode.el.nextSibling;
-                    } else {
-                        anchor = container?.firstChild;
-                    }
-                    !anchor && (anchor = null);
-                    patch(null, newChild, container, anchor, adapter);
-                }
-                // 移除节点
-                for (let index = 0; index < oldChildren.length; index++) {
-                    const element = oldChildren[index];
-                    const has = newChildren.find(({ key }) => element.key === key);
-                    if (!has) {
-                        unmount(element);
-                    }
-                }
-            }
+            // const oldChildren = oldVNode.children;
+            // const newChildren = newVNode.children;
+            patchKeyedChildren(oldVNode, newVNode, container, adapter);
         } else {
             container && adapter.setElementText(container, "");
             newVNode.children.forEach(child => {
@@ -195,4 +145,146 @@ function mountElement(
     }
     container && adapter.insert(el, container, anchor);
     return el;
+}
+
+function simpleDiff(
+    oldChildren: VNode[],
+    newChildren: VNode[],
+    container: HTMLElement | null,
+    adapter: RendererAdapter
+) {
+    let lastIndex = 0;
+    for (let i = 0; i < newChildren.length; i++) {
+        const newChild = newChildren[i];
+        let j = 0;
+        let find = false;
+        for (; j < oldChildren.length; j++) {
+            const oldChild = oldChildren[j];
+            if (oldChild.key === newChild.key) {
+                find = true;
+                // 更新节点
+                patch(oldChild, newChild, container, null, adapter);
+                if (j < lastIndex) {
+                    // 移动节点
+                    const prevVNode = newChildren[i - 1];
+                    if (prevVNode) {
+                        const anchor = prevVNode.el.nextSibling;
+                        container &&
+                            adapter.insert(newChild.el, container, anchor);
+                    }
+                } else {
+                    lastIndex = j;
+                }
+                break;
+            }
+        }
+        // 新增节点
+        if (!find) {
+            const prevVNode = newChildren[i - 1];
+            let anchor = null;
+            if (prevVNode) {
+                anchor = prevVNode.el.nextSibling;
+            } else {
+                anchor = container?.firstChild;
+            }
+            !anchor && (anchor = null);
+            patch(null, newChild, container, anchor, adapter);
+        }
+        // 移除节点
+        for (let index = 0; index < oldChildren.length; index++) {
+            const element = oldChildren[index];
+            const has = newChildren.find(({ key }) => element.key === key);
+            if (!has) {
+                unmount(element);
+            }
+        }
+    }
+}
+
+/**
+ * 双端diff
+ * @param oldVNode 旧节点
+ * @param newVNode 新节点
+ * @param container 
+ * @param adapter 
+ */
+function patchKeyedChildren(
+    oldVNode: VNode,
+    newVNode: VNode,
+    container: HTMLElement | null,
+    adapter: RendererAdapter
+) {
+    const oldChildren = oldVNode.children as Array<VNode | undefined>;
+    const newChildren = newVNode.children as Array<VNode>;
+
+    let oldStartIndex = 0;
+    let oldEndIndex = oldChildren.length - 1;
+    let newStartIndex = 0;
+    let newEndIndex = newChildren.length - 1;
+
+    let oldStartVNode = oldChildren[oldStartIndex];
+    let oldEndVNode = oldChildren[oldEndIndex];
+    let newStartVNode = newChildren[newStartIndex];
+    let newEndVNode = newChildren[newEndIndex];
+
+    while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
+        if (!oldStartVNode) {
+            oldStartVNode = oldChildren[++oldStartIndex];
+        } else if (!oldEndVNode) {
+            oldEndVNode = oldChildren[--oldEndIndex];
+        } else if (oldStartVNode.key === newStartVNode.key) {
+            patch(oldStartVNode, newStartVNode, container, null, adapter);
+            oldStartVNode = oldChildren[++oldStartIndex];
+            newStartVNode = newChildren[++newStartIndex];
+        } else if (oldEndVNode.key === newEndVNode.key) {
+            patch(oldEndVNode, newEndVNode, container, null, adapter);
+            oldEndVNode = oldChildren[--oldEndIndex];
+            newEndVNode = newChildren[--newEndIndex];
+        } else if (oldStartVNode.key === newEndVNode.key) {
+            patch(oldStartVNode, newEndVNode, container, null, adapter);
+            container &&
+                adapter.insert(
+                    oldStartVNode.el,
+                    container,
+                    oldEndVNode.el.nextSibling
+                );
+            oldStartVNode = oldChildren[++oldStartIndex];
+            newEndVNode = newChildren[--newEndIndex];
+        } else if (oldEndVNode.key === newStartVNode.key) {
+            patch(oldEndVNode, newEndVNode, container, null, adapter);
+            container &&
+                adapter.insert(oldEndVNode.el, container, oldStartVNode.el);
+            oldEndVNode = oldChildren[--oldEndIndex];
+            newStartVNode = newChildren[++newStartIndex];
+        } else {
+            const idxInOld = oldChildren.findIndex((element) => {
+                if (element) {
+                    return element.key === newStartVNode.key;
+                }
+                return false;
+            });
+            
+            if (idxInOld) {
+                const idxInOldVNode = oldChildren[idxInOld] as VNode;
+                patch(idxInOldVNode, newStartVNode, container, null, adapter);
+                container && adapter.insert(idxInOldVNode.el, container, oldStartVNode.el);
+                oldChildren[idxInOld] = undefined;
+            } else {
+                patch(null, newStartVNode, container, oldStartVNode.el, adapter);
+            }
+            newStartVNode = newChildren[++newStartIndex];
+        }
+    }
+
+    if (oldEndIndex < oldStartIndex && newStartIndex <= newEndIndex) {
+        for (let index = newStartIndex; index <= newEndIndex; index++) {
+            const element = newChildren[index];
+            patch(null, element, container, (oldStartVNode as VNode).el, adapter);
+        }
+    } else if (newEndIndex < newStartIndex && oldStartIndex <= oldEndIndex) {
+        for (let index = oldStartIndex; index <= oldEndIndex; index++) {
+            const element = oldChildren[index];
+            unmount(element as VNode);
+        }
+    }
 }
