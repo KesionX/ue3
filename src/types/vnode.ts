@@ -13,7 +13,7 @@ declare type DefaultFactory<T> = () => T | null | undefined;
 
 declare type PropType<T> = PropConstructor<T> | PropConstructor<T>[];
 
-interface PropOptions<T = any, D = T> {
+export interface PropOptions<T = any, D = T> {
     type?: PropType<T> | true | null;
     required?: boolean;
     default?: D | DefaultFactory<D> | null | undefined | object;
