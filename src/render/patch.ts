@@ -1,6 +1,7 @@
 import { Fragment, RendererAdapter, VTypeText } from "../types";
 import { VNode } from "../types/vnode";
 import { unmount } from "./unmount";
+import { getSequence } from "../utils/get-sequence";
 
 export function patch(
     oldVNode: VNode | null,
@@ -147,6 +148,13 @@ function mountElement(
     return el;
 }
 
+/**
+ * 简单diff
+ * @param oldChildren 旧节点
+ * @param newChildren 新节点
+ * @param container
+ * @param adapter
+ */
 function simpleDiff(
     oldChildren: VNode[],
     newChildren: VNode[],
@@ -185,7 +193,7 @@ function simpleDiff(
             if (prevVNode) {
                 anchor = prevVNode.el.nextSibling;
             } else {
-                anchor = container?.firstChild;
+                container && (anchor = container.firstChild);
             }
             !anchor && (anchor = null);
             patch(null, newChild, container, anchor, adapter);
@@ -205,10 +213,10 @@ function simpleDiff(
  * 双端diff
  * @param oldVNode 旧节点
  * @param newVNode 新节点
- * @param container 
- * @param adapter 
+ * @param container
+ * @param adapter
  */
-function patchKeyedChildren(
+function doubleEndedDiff(
     oldVNode: VNode,
     newVNode: VNode,
     container: HTMLElement | null,
@@ -257,20 +265,31 @@ function patchKeyedChildren(
             oldEndVNode = oldChildren[--oldEndIndex];
             newStartVNode = newChildren[++newStartIndex];
         } else {
-            const idxInOld = oldChildren.findIndex((element) => {
+            const idxInOld = oldChildren.findIndex(element => {
                 if (element) {
                     return element.key === newStartVNode.key;
                 }
                 return false;
             });
-            
+
             if (idxInOld) {
                 const idxInOldVNode = oldChildren[idxInOld] as VNode;
                 patch(idxInOldVNode, newStartVNode, container, null, adapter);
-                container && adapter.insert(idxInOldVNode.el, container, oldStartVNode.el);
+                container &&
+                    adapter.insert(
+                        idxInOldVNode.el,
+                        container,
+                        oldStartVNode.el
+                    );
                 oldChildren[idxInOld] = undefined;
             } else {
-                patch(null, newStartVNode, container, oldStartVNode.el, adapter);
+                patch(
+                    null,
+                    newStartVNode,
+                    container,
+                    oldStartVNode.el,
+                    adapter
+                );
             }
             newStartVNode = newChildren[++newStartIndex];
         }
@@ -279,12 +298,161 @@ function patchKeyedChildren(
     if (oldEndIndex < oldStartIndex && newStartIndex <= newEndIndex) {
         for (let index = newStartIndex; index <= newEndIndex; index++) {
             const element = newChildren[index];
-            patch(null, element, container, oldStartVNode ? (oldStartVNode as VNode).el : null, adapter);
+            patch(
+                null,
+                element,
+                container,
+                oldStartVNode ? (oldStartVNode as VNode).el : null,
+                adapter
+            );
         }
     } else if (newEndIndex < newStartIndex && oldStartIndex <= oldEndIndex) {
         for (let index = oldStartIndex; index <= oldEndIndex; index++) {
             const element = oldChildren[index];
             unmount(element as VNode);
+        }
+    }
+}
+
+function patchKeyedChildren(
+    oldVNode: VNode,
+    newVNode: VNode,
+    container: HTMLElement | null,
+    adapter: RendererAdapter
+) {
+    const oldChildren = oldVNode.children as Array<VNode>;
+    const newChildren = newVNode.children as Array<VNode>;
+
+    let j = 0;
+    let oldChild = oldChildren[j];
+    let newChild = newChildren[j];
+    let oldEndIndex = oldChildren.length - 1;
+    let newEndIndex = newChildren.length - 1;
+    let oldEndVNode = oldChildren[oldEndIndex];
+    let newEndVNode = newChildren[newEndIndex];
+
+    while (oldChild && newChild && oldChild.key === newChild.key) {
+        patch(oldChild, newChild, container, null, adapter);
+        oldChild = oldChildren[++j];
+        newChild = newChildren[j];
+    }
+
+    // j < oldEndIndex
+    while (
+        j < oldEndIndex &&
+        oldEndVNode &&
+        newEndVNode &&
+        oldEndVNode.key === newEndVNode.key
+    ) {
+        patch(oldEndVNode, newEndVNode, container, null, adapter);
+        oldEndVNode = oldChildren[--oldEndIndex];
+        newEndVNode = newChildren[--newEndIndex];
+    }
+
+    if (j > oldEndIndex && j <= newEndIndex) {
+        const anchorIndex = newEndIndex + 1;
+        const anchor =
+            anchorIndex < newChildren.length
+                ? newChildren[anchorIndex].el
+                : null;
+        while (j <= newEndIndex) {
+            const newcc = newChildren[j++];
+            patch(null, newcc, container, anchor, adapter);
+        }
+    } else if (j > newEndIndex && j <= oldEndIndex) {
+        while (j <= oldEndIndex) {
+            unmount(oldChildren[j++]);
+        }
+    } else {
+        const count = newEndIndex - j + 1;
+        const source = new Array(count);
+        source.fill(-1);
+        const oldStartIndex = j;
+        const newStartIndex = j;
+
+        let moved = false;
+        let pos = 0;
+        let patched = 0;
+        const keyIndex = new Map();
+        for (let i = newStartIndex; i <= newEndIndex; i++) {
+            const key = newChildren[i].key;
+            if (key) {
+                keyIndex.set(key, i);
+            }
+        }
+        console.log('@@@@@@@@@@@', keyIndex, oldStartIndex, oldEndIndex, count);
+        for (let i = oldStartIndex; i <= oldEndIndex; i++) {
+            const oldVn = oldChildren[i];
+            console.log('ooooooo', oldVn);
+            if (!oldVn.key) {
+                continue;
+            }
+            if (patched <= count) {
+                if (keyIndex.has(oldVn.key)) {
+                    const k = keyIndex.get(oldVn.key);
+                    patch(oldVn, newChildren[k], container, null, adapter);
+                    source[k - newStartIndex] = i;
+                    patched++;
+                    if (k < pos) {
+                        moved = true;
+                    } else {
+                        pos = k;
+                    }
+                } else {
+                    // 卸载没有的节点
+                    unmount(oldVn);
+                }
+            } else {
+                // 卸载多余节点
+                unmount(oldVn);
+            }
+        }
+        console.log('#### source',source, moved);
+        if (moved) {
+            const seq = getSequence(source);
+            let s = seq.length - 1;
+            let i = count - 1;
+            for (i; i >= 0; i--) {
+                if (source[i] === -1) {
+                    // 新增
+                    const pos = i + newStartIndex;
+                    const newVn = newChildren[pos];
+                    const nextIndex = pos + 1;
+                    const anchor =
+                        nextIndex < newChildren.length
+                            ? newChildren[nextIndex].el
+                            : null;
+                    patch(null, newVn, container, anchor, adapter);
+                } else if (seq[s] !== i) {
+                    // 需要移动
+                    const pos = i + newStartIndex;
+                    const newVn = newChildren[pos];
+                    const nextIndex = pos + 1;
+                    const anchor =
+                        nextIndex < newChildren.length
+                            ? newChildren[nextIndex].el
+                            : null;
+                   container && adapter.insert(newVn.el, container, anchor);
+                } else {
+                    // 不需要移动
+                    s--;
+                }
+            }
+        } else {
+            for (let index = 0; index < source.length; index++) {
+                const newIdx = source[index];
+                if (newIdx !== -1) {
+                    continue;
+                }
+                const pos = index + newStartIndex;
+                const newVn = newChildren[pos];
+                const nextIndex = pos + 1;
+                const anchor =
+                    nextIndex < newChildren.length
+                        ? newChildren[nextIndex].el
+                        : null;
+                patch(null, newVn, container, anchor, adapter);
+            }
         }
     }
 }
