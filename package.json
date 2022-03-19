@@ -4,8 +4,8 @@
     "description": "ue3 build your own vue for learning.",
     "main": "index.js",
     "scripts": {
-        "build": "rollup -c rollup.config.js --watch",
-        "dev": "tsc -w -p .",
+        "build": "rollup -c rollup.config.js",
+        "dev": "rollup -c rollup.config.js --watch",
         "cypress:open": "cypress open",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
