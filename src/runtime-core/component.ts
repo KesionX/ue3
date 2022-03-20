@@ -42,7 +42,7 @@ export function mountComponent(
     } = componentOptions;
     beforeCreated && beforeCreated();
     const [props, attrs] = resolveProps(propsData, vnode.props);
-    const state = reactive(data());
+    const state = reactive(data ? data() : {});
     const instance: ComponentInstance = {
         props: shallowReactive(props),
         state,
@@ -200,13 +200,13 @@ function hasPropsChanged(
 }
 
 function resolveProps(
-    options: Record<string, any>,
+    options: Record<string, any> | undefined,
     propsData: Record<string, any> | undefined
 ) {
     const props: Record<string, any> = {};
     const attrs: Record<string, any> = {};
     for (const key in propsData) {
-        if (key in options || key.startsWith("on")) {
+        if (options && key in options || key.startsWith("on")) {
             props[key] = propsData[key];
         } else {
             attrs[key] = propsData[key];

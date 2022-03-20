@@ -59,10 +59,11 @@ export type SetupFunction<P, C> = (props: P, context: C) => ComponentFunction | 
 
 export interface ComponentOptions {
     // el
-    props: ComponentPropsOptions;
-    data: () => Data;
-    render: ComponentFunction;
     setup: SetupFunction<ComponentPropsOptions, SetupContext>;
+    props?: ComponentPropsOptions;
+    data?: () => Data;
+    render?: ComponentFunction;
+    emits?: Array<string>;
     [LifecycleHooks.BEFORE_CREATE]?: () => void;
     [LifecycleHooks.CREATED]?: <T>(data: T) => void;
     [LifecycleHooks.BEFORE_MOUNT]?: <T>(data: T) => void;
@@ -70,6 +71,8 @@ export interface ComponentOptions {
     [LifecycleHooks.BEFORE_UPDATE]?: <T>(data: T) => void;
     [LifecycleHooks.UPDATED]?: <T>(data: T) => void;
 }
+
+export type DefineComponent = ComponentOptions;
 
 export interface ComponentInstance {
     state: Data; // data
