@@ -30,18 +30,56 @@ declare type ComponentObjectPropsOptions<P = Data> = {
     [K in keyof P]: Prop<P[K]> | null;
 };
 // string[]
-declare type ComponentPropsOptions<P = Data> = ComponentObjectPropsOptions<P>;
+export type ComponentPropsOptions<P = Data> = ComponentObjectPropsOptions<P>;
+export type ComponentFunction<Props = ComponentPropsOptions> = () => VNode;
 
-interface ComponentOptionsBase {
-    // el
-    props: ComponentPropsOptions;
-    // data
-    // render
-    // setup?: SetupFunction<Props, RawBindings, Emits>;
+export const enum LifecycleHooks {
+  BEFORE_CREATE = 'beforeCreated',
+  CREATED = 'created',
+  BEFORE_MOUNT = 'beforeMount',
+  MOUNTED = 'mounted',
+  BEFORE_UPDATE = 'beforeUpdate',
+  UPDATED = 'updated',
+  BEFORE_UNMOUNT = 'bum',
+  UNMOUNTED = 'um',
+  DEACTIVATED = 'da',
+  ACTIVATED = 'a',
+  RENDER_TRIGGERED = 'rtg',
+  RENDER_TRACKED = 'rtc',
+  ERROR_CAPTURED = 'ec',
+  SERVER_PREFETCH = 'sp'
 }
 
-declare type ComponentFunction<Props = ComponentPropsOptions> = () => VNode;
-declare type VueTag = string | ComponentFunction | symbol;
+export interface SetupContext {
+    emit: (event: string, ...args: any) => void;
+    attrs: Data;
+}
+
+export type SetupFunction<P, C> = (props: P, context: C) => ComponentFunction | VNode;
+
+export interface ComponentOptions {
+    // el
+    props: ComponentPropsOptions;
+    data: () => Data;
+    render: ComponentFunction;
+    setup: SetupFunction<ComponentPropsOptions, SetupContext>;
+    [LifecycleHooks.BEFORE_CREATE]?: () => void;
+    [LifecycleHooks.CREATED]?: <T>(data: T) => void;
+    [LifecycleHooks.BEFORE_MOUNT]?: <T>(data: T) => void;
+    [LifecycleHooks.MOUNTED]?: <T>(data: T) => void;
+    [LifecycleHooks.BEFORE_UPDATE]?: <T>(data: T) => void;
+    [LifecycleHooks.UPDATED]?: <T>(data: T) => void;
+}
+
+export interface ComponentInstance {
+    state: Data; // data
+    props: ComponentPropsOptions,
+    isMounted: boolean;
+    subTree: VNode | null;
+    mounted: Array<ComponentFunction>;
+}
+
+declare type VueTag = string | ComponentFunction | symbol | ComponentOptions;
 
 export type VNodeTypes = string;
 //   | VNode
@@ -66,4 +104,5 @@ export interface VNode<Props = ComponentPropsOptions> {
     data?: Props;
     key?: string | number | symbol;
     children?: VNode[] | string;
+    component?: ComponentInstance;
 }

@@ -2,6 +2,7 @@ import { Fragment, RendererAdapter, VTypeText } from "../types";
 import { VNode } from "../types/vnode";
 import { unmount } from "./unmount";
 import { getSequence } from "../utils/get-sequence";
+import { mountComponent, patchComponent } from "./component";
 
 export function patch(
     oldVNode: VNode | null,
@@ -27,6 +28,11 @@ export function patch(
         }
     } else if (typeof type === "object") {
         // 组件
+        if (!oldVNode) {
+            container && mountComponent(newVNode, container, anchor, adapter);
+        } else {
+            container && patchComponent(oldVNode, newVNode, container, anchor, adapter);
+        }
     } else if (type === VTypeText) {
         if (!oldVNode) {
             // @ts-ignore
@@ -314,6 +320,13 @@ function doubleEndedDiff(
     }
 }
 
+/**
+ * 快速diff
+ * @param oldVNode 旧节点
+ * @param newVNode 新节点
+ * @param container
+ * @param adapter
+ */
 function patchKeyedChildren(
     oldVNode: VNode,
     newVNode: VNode,
@@ -380,10 +393,10 @@ function patchKeyedChildren(
                 keyIndex.set(key, i);
             }
         }
-        console.log('@@@@@@@@@@@', keyIndex, oldStartIndex, oldEndIndex, count);
+        console.log("@@@@@@@@@@@", keyIndex, oldStartIndex, oldEndIndex, count);
         for (let i = oldStartIndex; i <= oldEndIndex; i++) {
             const oldVn = oldChildren[i];
-            console.log('ooooooo', oldVn);
+            console.log("ooooooo", oldVn);
             if (!oldVn.key) {
                 continue;
             }
@@ -407,7 +420,7 @@ function patchKeyedChildren(
                 unmount(oldVn);
             }
         }
-        console.log('#### source',source, moved);
+        console.log("#### source", source, moved);
         if (moved) {
             const seq = getSequence(source);
             let s = seq.length - 1;
@@ -432,7 +445,7 @@ function patchKeyedChildren(
                         nextIndex < newChildren.length
                             ? newChildren[nextIndex].el
                             : null;
-                   container && adapter.insert(newVn.el, container, anchor);
+                    container && adapter.insert(newVn.el, container, anchor);
                 } else {
                     // 不需要移动
                     s--;
