@@ -11,30 +11,45 @@ import {
 const MyComponent = defineComponent({
     props: {
         count: {
-            type: Number,
-            default: 0
+            type: Object
         }
     },
     setup(props) {
-        const countRef = ref(0);
+        const countRef = ref({
+            a: 1
+        });
 
-        setInterval(() => {
-            countRef.value = countRef.value + 1;
-        }, 1000);
+        // setInterval(() => {
+        //     countRef.value.a = countRef.value.a + 1;
+        // }, 1000);
         return () => {
             return {
                 type: "div",
-                children: countRef.value + "hello" + props.count
+                children: "hello" + props.count.a
             };
         };
     }
 });
 
 const render = createRenderer().render;
-
-render({
-    type: MyComponent,
-    props: {
-        count: 1
-    }
-}, document.getElementById('app'));
+const countRef = ref({
+    a: 1
+});
+setInterval(() => {
+    countRef.value.a = countRef.value.a + 1;
+}, 1000);
+console.log('countRef', countRef);
+render(
+    {
+        type: "div",
+        children: [
+            {
+                type: MyComponent,
+                props: {
+                    count: countRef.value
+                }
+            }
+        ]
+    },
+    document.getElementById("app")
+);
