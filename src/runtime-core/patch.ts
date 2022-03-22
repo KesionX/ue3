@@ -375,7 +375,6 @@ function patchKeyedChildren(
     } else if (j > newEndIndex && j <= oldEndIndex) {
         while (j <= oldEndIndex) {
             unmount(oldChildren[j++]);
-            console.log('-=-=-=-=-=-=');
         }
     } else {
         const count = newEndIndex - j + 1;
@@ -414,12 +413,10 @@ function patchKeyedChildren(
                 } else {
                     // 卸载没有的节点
                     unmount(oldVn);
-                    console.log("ppppppooooooo", oldVn, patched);
                 }
             } else {
                 // 卸载多余节点
                 unmount(oldVn);
-                console.log('!))9(!)!()!!!!');
             }
         }
         console.log("#### source", source, moved);
