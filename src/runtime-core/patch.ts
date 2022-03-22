@@ -375,6 +375,7 @@ function patchKeyedChildren(
     } else if (j > newEndIndex && j <= oldEndIndex) {
         while (j <= oldEndIndex) {
             unmount(oldChildren[j++]);
+            console.log('-=-=-=-=-=-=');
         }
     } else {
         const count = newEndIndex - j + 1;
@@ -396,11 +397,10 @@ function patchKeyedChildren(
         console.log("@@@@@@@@@@@", keyIndex, oldStartIndex, oldEndIndex, count);
         for (let i = oldStartIndex; i <= oldEndIndex; i++) {
             const oldVn = oldChildren[i];
-            console.log("ooooooo", oldVn);
             if (!oldVn.key) {
                 continue;
             }
-            if (patched <= count) {
+            if (patched < count) {
                 if (keyIndex.has(oldVn.key)) {
                     const k = keyIndex.get(oldVn.key);
                     patch(oldVn, newChildren[k], container, null, adapter);
@@ -414,10 +414,12 @@ function patchKeyedChildren(
                 } else {
                     // 卸载没有的节点
                     unmount(oldVn);
+                    console.log("ppppppooooooo", oldVn, patched);
                 }
             } else {
                 // 卸载多余节点
                 unmount(oldVn);
+                console.log('!))9(!)!()!!!!');
             }
         }
         console.log("#### source", source, moved);
