@@ -29,8 +29,8 @@ export enum TextModes {
 
 export interface Position {
     offset: number; // from start of file
-    line: number;
-    column: number;
+    line?: number;
+    column?: number;
 }
 
 export interface SourceLocation {

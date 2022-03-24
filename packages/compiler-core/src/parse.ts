@@ -38,7 +38,10 @@ export function parse(context: ParserContext, ancestors: ElementNode[]) {
     return rootNode;
 }
 
-export function parseChildren(context: ParserContext, ancestors: ElementNode[]) {
+export function parseChildren(
+    context: ParserContext,
+    ancestors: ElementNode[]
+) {
     const nodes: Node[] = [];
     const { mode, source } = context;
     // if ()
@@ -73,7 +76,8 @@ export function parseChildren(context: ParserContext, ancestors: ElementNode[]) 
 }
 
 function parseELement(context: ParserContext, ancestors: ElementNode[]) {
-    const element = parseTag(context, ancestors);
+    const element = parseTag(context);
+    const start = context.offset;
     if (element.isSelfClosing) return element;
 
     ancestors.push(element);
@@ -81,7 +85,7 @@ function parseELement(context: ParserContext, ancestors: ElementNode[]) {
     ancestors.pop();
 
     if (context.source.startsWith(`</${element.tag}`)) {
-
+        parseTag(context, true);
     } else {
         console.warn(`缺少${element.tag}闭合标签`);
     }
@@ -89,16 +93,27 @@ function parseELement(context: ParserContext, ancestors: ElementNode[]) {
     return element;
 }
 
-function parseTag(context: ParserContext, ancestors: ElementNode[]) {
-    const tag: ElementNode = {
-        // TODO
-        tag: '',
-        type: NodeTypes.ELEMENT
-    };
-    return tag;
-}
+function parseTag(context: ParserContext, end?: boolean) {
+    // const start = context.offset;
+    let match = end
+        ? /^<\/([a-z][^\t\r\n\f />]*)/i.exec(context.source)
+        : /^<([a-z][^\t\r\n\f />]*)/i.exec(context.source);
+    // TODO 匹配不一定是正确的
+    const tag = match[1];
+    advanceBy(context, tag.length);
+    advanceSpaces(context);
+    const isSelfClosing = context.source.startsWith("/>");
+    // > or />
+    advanceBy(context, isSelfClosing ? 2 : 1);
 
-function parseTagEnd(context: ParserContext, ancestors: ElementNode[]) {}
+    const element: ElementNode = {
+        tag,
+        type: NodeTypes.ELEMENT,
+        isSelfClosing,
+        children: []
+    };
+    return element;
+}
 
 function createParseContext(content: string, options = {}): ParserContext {
     return Object.assign(
@@ -129,4 +144,26 @@ function isEnd(context: ParserContext, ancestors: ElementNode[]) {
         }
     }
     return false;
+}
+
+function advanceBy(context: ParserContext, count: number) {
+    const prevOffset = context.offset;
+    context.source = context.source.slice(count);
+    context.offset = context.offset + count;
+
+    return {
+        prevOffset,
+        offset: context.offset
+    };
+}
+
+function advanceSpaces(context: ParserContext) {
+    const match = /^[\t\r\n\f]+/.exec(context.source);
+    if (match) {
+        return advanceBy(context, match[0].length);
+    }
+    return {
+        prevOffset: context.offset,
+        offset: context.offset
+    };
 }
