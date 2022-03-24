@@ -76,8 +76,15 @@ function parseELement(context: ParserContext, ancestors: ElementNode[]) {
     const element = parseTag(context, ancestors);
     if (element.isSelfClosing) return element;
 
+    ancestors.push(element);
     element.children = parseChildren(context, ancestors);
-    parseTagEnd(context, ancestors);
+    ancestors.pop();
+
+    if (context.source.startsWith(`${element.tag}/>`)) {
+
+    } else {
+        console.warn(`缺少${element.tag}闭合标签`);
+    }
 
     return element;
 }
