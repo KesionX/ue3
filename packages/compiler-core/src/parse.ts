@@ -76,16 +76,24 @@ export function parseChildren(
 }
 
 function parseELement(context: ParserContext, ancestors: ElementNode[]) {
-    const element = parseTag(context);
+    let element = parseTag(context);
     const start = context.offset;
     if (element.isSelfClosing) return element;
+
+    if (element.tag === 'textarea' || element.tag === 'title') {
+        context.mode = TextModes.RCDATA;
+    } else if (/style|xmp|iframe|noembed|noframes|noscript/.test(element.tag)) {
+        context.mode = TextModes.RAWTEXT;
+    } else {
+        context.mode = TextModes.DATA;
+    }
 
     ancestors.push(element);
     element.children = parseChildren(context, ancestors);
     ancestors.pop();
 
     if (context.source.startsWith(`</${element.tag}`)) {
-        parseTag(context, true);
+        const elementEnd = parseTag(context, true);
     } else {
         console.warn(`缺少${element.tag}闭合标签`);
     }
