@@ -49,6 +49,7 @@ export interface RootNode extends Node {
 }
 
 export interface ElementNode extends Node {
+    tag: string;
     children?: Node[] | none;
     /**
      * 是否是自闭合标签

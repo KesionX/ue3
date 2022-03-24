@@ -29,7 +29,7 @@ export function baseParse(content: string, options = {}) {
     const context = createParseContext(content, options);
 }
 
-export function parse(context: ParserContext, ancestors) {
+export function parse(context: ParserContext, ancestors: ElementNode[]) {
     const children = parseChildren(context, ancestors);
     const rootNode: RootNode = {
         type: NodeTypes.ROOT,
@@ -38,11 +38,11 @@ export function parse(context: ParserContext, ancestors) {
     return rootNode;
 }
 
-export function parseChildren(context: ParserContext, ancestors) {
+export function parseChildren(context: ParserContext, ancestors: ElementNode[]) {
     const nodes: Node[] = [];
     const { mode, source } = context;
     // if ()
-    while (!isEnd(context)) {
+    while (!isEnd(context, ancestors)) {
         let node: Node = null;
         if (mode === TextModes.DATA || mode === TextModes.RCDATA) {
             if (mode === TextModes.DATA && source[0] === "<") {
@@ -72,22 +72,26 @@ export function parseChildren(context: ParserContext, ancestors) {
     return nodes;
 }
 
-function parseELement(context: ParserContext, ancestors) {
+function parseELement(context: ParserContext, ancestors: ElementNode[]) {
     const element = parseTag(context, ancestors);
+    if (element.isSelfClosing) return element;
+
     element.children = parseChildren(context, ancestors);
     parseTagEnd(context, ancestors);
 
     return element;
 }
 
-function parseTag(context: ParserContext, ancestors: any) {
+function parseTag(context: ParserContext, ancestors: ElementNode[]) {
     const tag: ElementNode = {
+        // TODO
+        tag: '',
         type: NodeTypes.ELEMENT
     };
     return tag;
 }
 
-function parseTagEnd(context: ParserContext, ancestors: any) {}
+function parseTagEnd(context: ParserContext, ancestors: ElementNode[]) {}
 
 function createParseContext(content: string, options = {}): ParserContext {
     return Object.assign(
@@ -106,7 +110,7 @@ function createParseContext(content: string, options = {}): ParserContext {
     );
 }
 
-function isEnd(context: ParserContext, ancestors: any[]) {
+function isEnd(context: ParserContext, ancestors: ElementNode[]) {
     if (!context.source || !context.source.length) {
         return true;
     }
