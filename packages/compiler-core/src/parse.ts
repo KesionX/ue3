@@ -80,7 +80,7 @@ function parseELement(context: ParserContext, ancestors: ElementNode[]) {
     element.children = parseChildren(context, ancestors);
     ancestors.pop();
 
-    if (context.source.startsWith(`${element.tag}/>`)) {
+    if (context.source.startsWith(`</${element.tag}`)) {
 
     } else {
         console.warn(`缺少${element.tag}闭合标签`);
