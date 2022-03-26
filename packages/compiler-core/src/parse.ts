@@ -6,6 +6,8 @@
 import { ParserContext } from "./types";
 import _ from "lodash";
 import {
+    AttributeNode,
+    DirectiveNode,
     ElementNode,
     Node,
     NodeTypes,
@@ -123,6 +125,7 @@ function parseTag(context: ParserContext, end?: boolean) {
     const element: ElementNode = {
         tag,
         type: NodeTypes.ELEMENT,
+        props,
         isSelfClosing,
         children: []
     };
@@ -183,53 +186,76 @@ function advanceSpaces(context: ParserContext) {
 }
 
 function parseAttributes(context: ParserContext) {
-    const props = [];
+    const props: Array<AttributeNode | DirectiveNode> = [];
+    advanceSpaces(context);
     while (
         !context.source.startsWith(">") &&
         !context.source.startsWith("/>")
     ) {
         // name="name" :name="name" @name="" name='name'
         const match = /^[^\t\f\n\r />][^\t\f\n\r />=]*/.exec(context.source);
-        if (match) {
+        if (!match) {
+            break;
         }
+        let startOffset = context.offset;
         let name = match[0];
         let value;
+        let type = NodeTypes.ATTRIBUTE;
         advanceBy(context, name.length);
+        let endOffset = context.offset;
         advanceSpaces(context);
-        // name
-        if (!context.source.startsWith("=")) {
-            value = true;
-            advanceBy(context, 1);
-        }
 
-        if (name.startsWith(":") || name.startsWith("@")) {
+        if (name.startsWith(":")) {
+            // :name
             name = name.slice(1);
-        }
-
-        const quote = context.source[0];
-        const isQuted = quote === '"' || quote === "'";
-        if (isQuted) {
-            advanceBy(context, 1);
-            const nextQuoteIndex = context.source.indexOf(quote);
-            if (nextQuoteIndex > -1) {
-                value = context.source.slice(0, nextQuoteIndex);
-                advanceBy(context, value.length);
-                advanceBy(context, 1);
-            } else {
-                console.error("缺少引号");
-            }
+        } else if (name.startsWith("@")) {
+            // @name
+            name = name.slice(1);
+            type = NodeTypes.DIRECTIVE;
         } else {
-            const match = /^[^\t\r\f\n >]+/.exec(context.source);
-            value = match[0];
-            advanceBy(context, value.length);
+            // name
+            if (!context.source.startsWith("=")) {
+                value = true;
+                advanceBy(context, 1);
+            }
+        }
+        if (!value) {
+            const quote = context.source[0];
+            const isQuted = quote === '"' || quote === "'";
+            if (isQuted) {
+                advanceBy(context, 1);
+                const nextQuoteIndex = context.source.indexOf(quote);
+                if (nextQuoteIndex > -1) {
+                    value = context.source.slice(0, nextQuoteIndex);
+                    advanceBy(context, value.length);
+                    advanceBy(context, 1);
+                } else {
+                    console.error("缺少引号");
+                }
+            } else {
+                const match = /^[^\t\r\f\n >]+/.exec(context.source);
+                value = match[0];
+                advanceBy(context, value.length);
+            }
+            endOffset = context.offset;
         }
         advanceSpaces(context);
 
-        props.push({
-            type: "Attribute",
+        let node: AttributeNode | DirectiveNode = {
+            type: type,
             name,
-            value
-        });
+            value,
+            loc: {
+                start: {
+                    offset: startOffset
+                },
+                end: {
+                    offset: endOffset
+                },
+                source: context.originalSource.substring(startOffset, endOffset);
+            }
+        };
+        props.push(node);
     }
     return props;
 }
