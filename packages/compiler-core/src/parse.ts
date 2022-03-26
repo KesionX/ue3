@@ -256,7 +256,8 @@ function parseAttributes(context: ParserContext) {
         const match = /^[^\t\f\n\r />][^\t\f\n\r />=]*/.exec(context.source);
         
         if (!match) {
-            break;
+            throw new Error("无法匹配");
+            // break;
         }
         let startOffset = context.offset;
         let name = match[0];
@@ -283,7 +284,7 @@ function parseAttributes(context: ParserContext) {
             // name=xxx
             advanceBy(context, 1);
         }
-        
+
         console.log('+++ Attribute step 2: ', context.source);
         if (!value) {
             // ="" 或 ='' 情况
@@ -297,7 +298,9 @@ function parseAttributes(context: ParserContext) {
                     advanceBy(context, value.length);
                     advanceBy(context, 1);
                 } else {
-                    console.error("缺少引号");
+                    // console.error("缺少引号");
+                    throw new Error(name + "：缺少引号");
+                    
                 }
             } else {
                 // name=xxxx情况
