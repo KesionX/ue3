@@ -60,13 +60,13 @@ export interface TextNode extends Node {
 export interface AttributeNode extends Node {
     type: NodeTypes.ATTRIBUTE;
     name: string;
-    value: string | undefined;
+    value: string | boolean | none;
 }
 
 export interface DirectiveNode extends Node {
     type: NodeTypes.DIRECTIVE;
     name: string;
-    value: string | undefined;
+    value: string | boolean | none;
 }
 
 export interface ElementNode extends Node {

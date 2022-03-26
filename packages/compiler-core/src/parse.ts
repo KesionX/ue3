@@ -29,10 +29,12 @@ export const locStub: SourceLocation = {
  */
 export function baseParse(content: string, options = {}) {
     const context = createParseContext(content, options);
+    const ast = parse(context);
+    return ast;
 }
 
-export function parse(context: ParserContext, ancestors: ElementNode[]) {
-    const children = parseChildren(context, ancestors);
+export function parse(context: ParserContext) {
+    const children = parseChildren(context, []);
     const rootNode: RootNode = {
         type: NodeTypes.ROOT,
         children
@@ -46,11 +48,14 @@ export function parseChildren(
 ) {
     const nodes: Node[] = [];
     const { mode, source } = context;
-    // if ()
+    console.log('mode, source', mode, source);
+    let  count = 0;
     while (!isEnd(context, ancestors)) {
-        let node: Node = null;
+        let node: Node | null = null;
         if (mode === TextModes.DATA || mode === TextModes.RCDATA) {
+            console.log('====');
             if (mode === TextModes.DATA && source[0] === "<") {
+                console.log('<<<<<', source[1]);
                 if (source[1] === "!" && source.startsWith("<!--")) {
                     // <!--
                 } else if (
@@ -60,8 +65,9 @@ export function parseChildren(
                     // CDATA
                 } else if (source[1] === "/") {
                     // </
-                } else if (/a-z/i.test(source[1])) {
+                } else if (/[a-z]/i.test(source[1])) {
                     // 标签
+                    console.log('标签解析')
                     node = parseELement(context, ancestors);
                 }
             } else if (source.startsWith("{{")) {
@@ -72,7 +78,11 @@ export function parseChildren(
         if (!node) {
             // 空文本
         }
-        nodes.push(node);
+        node && nodes.push(node);
+        if (count > 3) {
+            break;
+        }
+        count++;
     }
     return nodes;
 }
@@ -84,8 +94,9 @@ export function parseChildren(
  */
 function parseELement(context: ParserContext, ancestors: ElementNode[]) {
     advanceSpaces(context);
-    const start = context.offset;
+    const startOffset = context.offset;
     let element = parseTag(context);
+    console.log('element', element);
     if (element.isSelfClosing) return element;
 
     if (element.tag === "textarea" || element.tag === "title") {
@@ -101,7 +112,9 @@ function parseELement(context: ParserContext, ancestors: ElementNode[]) {
     ancestors.pop();
 
     if (context.source.startsWith(`</${element.tag}`)) {
-        const elementEnd = parseTag(context, true);
+        parseTag(context, true);
+        const endOffset = context.offset;
+        element.loc = createLoc(context, startOffset, endOffset);
     } else {
         console.warn(`缺少${element.tag}闭合标签`);
     }
@@ -112,23 +125,30 @@ function parseELement(context: ParserContext, ancestors: ElementNode[]) {
 /**
  * 解析标签1: <xxx xx xx=xx :xx="xx" @xx="xxx">
  * 解析标签2: <xxx xx xx=xx :xx="xx" @xx="xxx"/>
+ * 解析标签3: </xx> </xx   >
  * @param context 
  * @param end 
  */
 function parseTag(context: ParserContext, end?: boolean) {
     let startOffset = -1;
+    console.log('pre')
+    advanceSpaces(context);
     if (!end) {
         startOffset = context.offset;
     }
     let match = end
         ? /^<\/([a-z][^\t\r\n\f />]*)/i.exec(context.source)
         : /^<([a-z][^\t\r\n\f />]*)/i.exec(context.source);
-    // TODO 匹配不一定是正确的
+    if (!match || match?.length < 2) {
+        throw new Error('没有匹配到tag:' + context.source);
+    }
+    // tag=xxx
     const tag = match[1];
-    advanceBy(context, tag.length);
+    // match[0] = <xxx 或  match[0] = </xxx
+    advanceBy(context, match[0].length);
     advanceSpaces(context);
 
-    const props = parseAttributes(context);
+    let props = !end ? parseAttributes(context) : [];
 
     // > or />
     const isSelfClosing = context.source.startsWith("/>");
@@ -208,7 +228,7 @@ function createLoc(
 }
 
 function advanceSpaces(context: ParserContext) {
-    const match = /^[\t\r\n\f]+/.exec(context.source);
+    const match = /^[\t\r\n\f ]+/.exec(context.source);
     if (match) {
         return advanceBy(context, match[0].length);
     }
@@ -224,19 +244,23 @@ function advanceSpaces(context: ParserContext) {
  * @param context
  */
 function parseAttributes(context: ParserContext) {
+    console.log('parseAttributes:', context.source);
     const props: Array<AttributeNode | DirectiveNode> = [];
     advanceSpaces(context);
+    console.log('parseAttributes space laster:', context.source);
     while (
         !context.source.startsWith(">") &&
         !context.source.startsWith("/>")
     ) {
         // name="name" :name="name" @name="" name='name'
         const match = /^[^\t\f\n\r />][^\t\f\n\r />=]*/.exec(context.source);
+        
         if (!match) {
             break;
         }
         let startOffset = context.offset;
         let name = match[0];
+        console.log('+++ Attribute:', context.source, name);
         let value;
         let type = NodeTypes.ATTRIBUTE;
         advanceBy(context, name.length);
@@ -250,14 +274,19 @@ function parseAttributes(context: ParserContext) {
             // @name
             name = name.slice(1);
             type = NodeTypes.DIRECTIVE;
-        } else {
-            // name
-            if (!context.source.startsWith("=")) {
-                value = true;
-                advanceBy(context, 1);
-            }
         }
+
+        if (!context.source.startsWith("=")) {
+            // name
+            value = true;
+        } else {
+            // name=xxx
+            advanceBy(context, 1);
+        }
+        
+        console.log('+++ Attribute step 2: ', context.source);
         if (!value) {
+            // ="" 或 ='' 情况
             const quote = context.source[0];
             const isQuted = quote === '"' || quote === "'";
             if (isQuted) {
@@ -271,9 +300,12 @@ function parseAttributes(context: ParserContext) {
                     console.error("缺少引号");
                 }
             } else {
+                // name=xxxx情况
                 const match = /^[^\t\r\f\n >]+/.exec(context.source);
-                value = match[0];
-                advanceBy(context, value.length);
+                if (match) {
+                    value = match[0];
+                    advanceBy(context, value.length);
+                }
             }
             endOffset = context.offset;
         }
