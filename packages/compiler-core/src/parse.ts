@@ -80,7 +80,7 @@ function parseELement(context: ParserContext, ancestors: ElementNode[]) {
     const start = context.offset;
     if (element.isSelfClosing) return element;
 
-    if (element.tag === 'textarea' || element.tag === 'title') {
+    if (element.tag === "textarea" || element.tag === "title") {
         context.mode = TextModes.RCDATA;
     } else if (/style|xmp|iframe|noembed|noframes|noscript/.test(element.tag)) {
         context.mode = TextModes.RAWTEXT;
@@ -102,7 +102,10 @@ function parseELement(context: ParserContext, ancestors: ElementNode[]) {
 }
 
 function parseTag(context: ParserContext, end?: boolean) {
-    // const start = context.offset;
+    let start = -1;
+    if (!end) {
+        start = context.offset;
+    }
     let match = end
         ? /^<\/([a-z][^\t\r\n\f />]*)/i.exec(context.source)
         : /^<([a-z][^\t\r\n\f />]*)/i.exec(context.source);
@@ -110,8 +113,11 @@ function parseTag(context: ParserContext, end?: boolean) {
     const tag = match[1];
     advanceBy(context, tag.length);
     advanceSpaces(context);
-    const isSelfClosing = context.source.startsWith("/>");
+
+    const props = parseAttributes(context);
+
     // > or />
+    const isSelfClosing = context.source.startsWith("/>");
     advanceBy(context, isSelfClosing ? 2 : 1);
 
     const element: ElementNode = {
@@ -174,4 +180,56 @@ function advanceSpaces(context: ParserContext) {
         prevOffset: context.offset,
         offset: context.offset
     };
+}
+
+function parseAttributes(context: ParserContext) {
+    const props = [];
+    while (
+        !context.source.startsWith(">") &&
+        !context.source.startsWith("/>")
+    ) {
+        // name="name" :name="name" @name="" name='name'
+        const match = /^[^\t\f\n\r />][^\t\f\n\r />=]*/.exec(context.source);
+        if (match) {
+        }
+        let name = match[0];
+        let value;
+        advanceBy(context, name.length);
+        advanceSpaces(context);
+        // name
+        if (!context.source.startsWith("=")) {
+            value = true;
+            advanceBy(context, 1);
+        }
+
+        if (name.startsWith(":") || name.startsWith("@")) {
+            name = name.slice(1);
+        }
+
+        const quote = context.source[0];
+        const isQuted = quote === '"' || quote === "'";
+        if (isQuted) {
+            advanceBy(context, 1);
+            const nextQuoteIndex = context.source.indexOf(quote);
+            if (nextQuoteIndex > -1) {
+                value = context.source.slice(0, nextQuoteIndex);
+                advanceBy(context, value.length);
+                advanceBy(context, 1);
+            } else {
+                console.error("缺少引号");
+            }
+        } else {
+            const match = /^[^\t\r\f\n >]+/.exec(context.source);
+            value = match[0];
+            advanceBy(context, value.length);
+        }
+        advanceSpaces(context);
+
+        props.push({
+            type: "Attribute",
+            name,
+            value
+        });
+    }
+    return props;
 }
