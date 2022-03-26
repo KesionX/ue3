@@ -77,9 +77,15 @@ export function parseChildren(
     return nodes;
 }
 
+/**
+ * 解析 <xxx xx xx=xx :xx="xx" @xx="xxx"></xxx>
+ * @param context
+ * @param ancestors
+ */
 function parseELement(context: ParserContext, ancestors: ElementNode[]) {
-    let element = parseTag(context);
+    advanceSpaces(context);
     const start = context.offset;
+    let element = parseTag(context);
     if (element.isSelfClosing) return element;
 
     if (element.tag === "textarea" || element.tag === "title") {
@@ -103,10 +109,16 @@ function parseELement(context: ParserContext, ancestors: ElementNode[]) {
     return element;
 }
 
+/**
+ * 解析标签1: <xxx xx xx=xx :xx="xx" @xx="xxx">
+ * 解析标签2: <xxx xx xx=xx :xx="xx" @xx="xxx"/>
+ * @param context 
+ * @param end 
+ */
 function parseTag(context: ParserContext, end?: boolean) {
-    let start = -1;
+    let startOffset = -1;
     if (!end) {
-        start = context.offset;
+        startOffset = context.offset;
     }
     let match = end
         ? /^<\/([a-z][^\t\r\n\f />]*)/i.exec(context.source)
@@ -129,6 +141,11 @@ function parseTag(context: ParserContext, end?: boolean) {
         isSelfClosing,
         children: []
     };
+    // 如果是自闭 />
+    if (isSelfClosing) {
+        const endOffset = context.offset;
+        element.loc = createLoc(context, startOffset, endOffset);
+    }
     return element;
 }
 
@@ -174,6 +191,22 @@ function advanceBy(context: ParserContext, count: number) {
     };
 }
 
+function createLoc(
+    context: ParserContext,
+    startOffset: number,
+    endOffset: number
+) {
+    return {
+        start: {
+            offset: startOffset
+        },
+        end: {
+            offset: context.offset
+        },
+        source: context.originalSource.substring(startOffset, endOffset)
+    };
+}
+
 function advanceSpaces(context: ParserContext) {
     const match = /^[\t\r\n\f]+/.exec(context.source);
     if (match) {
@@ -185,6 +218,11 @@ function advanceSpaces(context: ParserContext) {
     };
 }
 
+/**
+ * 解析1： name=ss name="sss" :name="sss" @name="sss"  >  剩余:>
+ * 解析2： name=ss name="sss" :name="sss" @name="sss"  /> 剩余:/>
+ * @param context
+ */
 function parseAttributes(context: ParserContext) {
     const props: Array<AttributeNode | DirectiveNode> = [];
     advanceSpaces(context);
@@ -245,15 +283,7 @@ function parseAttributes(context: ParserContext) {
             type: type,
             name,
             value,
-            loc: {
-                start: {
-                    offset: startOffset
-                },
-                end: {
-                    offset: endOffset
-                },
-                source: context.originalSource.substring(startOffset, endOffset);
-            }
+            loc: createLoc(context, startOffset, endOffset)
         };
         props.push(node);
     }
