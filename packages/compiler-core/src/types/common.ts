@@ -5,7 +5,11 @@
  */
 export const enum NodeTypes {
     ROOT,
-    ELEMENT
+    ELEMENT,
+    ATTRIBUTE,
+    DIRECTIVE,
+
+    TEXT
 }
 
 declare type none = undefined | null;
@@ -48,8 +52,26 @@ export interface RootNode extends Node {
     children?: Node[] | none;
 }
 
+export interface TextNode extends Node {
+    type: NodeTypes.TEXT;
+    content: string;
+}
+
+export interface AttributeNode extends Node {
+    type: NodeTypes.ATTRIBUTE;
+    name: string;
+    value: string | undefined;
+}
+
+export interface DirectiveNode extends Node {
+    type: NodeTypes.DIRECTIVE;
+    name: string;
+    value: string | undefined;
+}
+
 export interface ElementNode extends Node {
     tag: string;
+    props: Array<AttributeNode | DirectiveNode>;
     children?: Node[] | none;
     /**
      * 是否是自闭合标签
