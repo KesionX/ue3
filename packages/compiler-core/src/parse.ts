@@ -7,6 +7,7 @@ import { ParserContext } from "./types";
 import _ from "lodash";
 import {
     AttributeNode,
+    CommentNode,
     DirectiveNode,
     ElementNode,
     InterpolationNode,
@@ -56,6 +57,7 @@ export function parseChildren(
         if (mode === TextModes.DATA || mode === TextModes.RCDATA) {
             if (mode === TextModes.DATA && source[0] === "<") {
                 if (source[1] === "!" && source.startsWith("<!--")) {
+                    parseComment(context);
                 } else if (
                     source[1] === "!" &&
                     source.startsWith("<![CDATA[")
@@ -466,5 +468,23 @@ function parseInterpolation(context: ParserContext) {
         loc: createLoc(context, startOffset, context.offset),
     };
 
+    return node;
+}
+
+function parseComment(context: ParserContext) {
+    advanceSpaces(context);
+    const startOffset = context.offset;
+    advanceBy(context, "<!--".length);
+    const endIndex = context.source.indexOf("-->");
+    const content = context.source.substring(0, endIndex);
+    advanceBy(context, content.length);
+    advanceSpaces(context);
+    advanceBy(context, "-->".length);
+
+    const node: CommentNode = {
+        type: NodeTypes.COMMENT,
+        content,
+        loc: createLoc(context, startOffset, context.offset),
+    };
     return node;
 }

@@ -11,6 +11,8 @@ export const enum NodeTypes {
     INTERPOLATION,
     SIMPLE_EXPRESSION,
 
+    COMMENT,
+
     TEXT,
 }
 
@@ -85,6 +87,11 @@ export interface ElementNode extends Node {
 
 export interface SimpleExpressionNode extends Node {
     type: NodeTypes.SIMPLE_EXPRESSION
+    content: string
+}
+
+export interface CommentNode extends Node {
+    type: NodeTypes.COMMENT
     content: string
 }
 export interface InterpolationNode extends Node {
