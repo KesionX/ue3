@@ -32,7 +32,9 @@ export const locStub: SourceLocation = {
  */
 export function baseParse(content: string, options = {}) {
     const context = createParseContext(content, options);
+    const start = context.offset;
     const ast = parse(context);
+    ast.loc = createLoc(context, start, context.offset);
     return ast;
 }
 
