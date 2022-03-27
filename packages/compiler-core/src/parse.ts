@@ -13,13 +13,14 @@ import {
     NodeTypes,
     RootNode,
     SourceLocation,
-    TextModes
+    TextModes,
+    TextNode,
 } from "./types/common";
 
 export const locStub: SourceLocation = {
     source: "",
     start: { line: 1, column: 1, offset: 0 },
-    end: { line: 1, column: 1, offset: 0 }
+    end: { line: 1, column: 1, offset: 0 },
 };
 
 /**
@@ -37,7 +38,7 @@ export function parse(context: ParserContext) {
     const children = parseChildren(context, []);
     const rootNode: RootNode = {
         type: NodeTypes.ROOT,
-        children
+        children,
     };
     return rootNode;
 }
@@ -48,7 +49,7 @@ export function parseChildren(
 ) {
     const nodes: Node[] = [];
     const { mode, source } = context;
-    console.log('@@@@@@@mode, source', mode, source);
+    console.log("@@@@@@@mode, source", mode, source);
     while (!isEnd(context, ancestors)) {
         let node: Node | null = null;
         if (mode === TextModes.DATA || mode === TextModes.RCDATA) {
@@ -64,7 +65,7 @@ export function parseChildren(
                     // </
                 } else if (/[a-z]/i.test(source[1])) {
                     // 标签
-                    console.log('标签解析')
+                    console.log("标签解析");
                     node = parseELement(context, ancestors);
                 }
             } else if (source.startsWith("{{")) {
@@ -74,6 +75,7 @@ export function parseChildren(
         advanceSpaces(context);
         if (!node) {
             // 空文本
+           node = parseText(context);
         }
         node && nodes.push(node);
     }
@@ -89,7 +91,7 @@ function parseELement(context: ParserContext, ancestors: ElementNode[]) {
     advanceSpaces(context);
     const startOffset = context.offset;
     let element = parseTag(context);
-    console.log('element', element);
+    console.log("element", element);
     if (element.isSelfClosing) return element;
 
     if (element.tag === "textarea" || element.tag === "title") {
@@ -110,7 +112,7 @@ function parseELement(context: ParserContext, ancestors: ElementNode[]) {
     } else {
         console.warn(`缺少${element.tag}闭合标签`);
     }
-    console.log('------ return', element);
+    console.log("------ return", element);
     return element;
 }
 
@@ -118,12 +120,12 @@ function parseELement(context: ParserContext, ancestors: ElementNode[]) {
  * 解析标签1: <xxx xx xx=xx :xx="xx" @xx="xxx">
  * 解析标签2: <xxx xx xx=xx :xx="xx" @xx="xxx"/>
  * 解析标签3: </xx> </xx   >
- * @param context 
- * @param end 
+ * @param context
+ * @param end
  */
 function parseTag(context: ParserContext, end?: boolean) {
     let startOffset = -1;
-    console.log('pre', context.source)
+    console.log("pre", context.source);
     advanceSpaces(context);
     if (!end) {
         startOffset = context.offset;
@@ -132,7 +134,7 @@ function parseTag(context: ParserContext, end?: boolean) {
         ? /^<\/([a-z][^\t\r\n\f />]*)/i.exec(context.source)
         : /^<([a-z][^\t\r\n\f />]*)/i.exec(context.source);
     if (!match || match?.length < 2) {
-        throw new Error('没有匹配到tag:' + context.source + end);
+        throw new Error("没有匹配到tag:" + context.source + end);
     }
     // tag=xxx
     const tag = match[1];
@@ -151,7 +153,7 @@ function parseTag(context: ParserContext, end?: boolean) {
         type: NodeTypes.ELEMENT,
         props,
         isSelfClosing,
-        children: []
+        children: [],
     };
     // 如果是自闭 />
     if (isSelfClosing) {
@@ -173,7 +175,7 @@ function createParseContext(content: string, options = {}): ParserContext {
             originalSource: content,
             source: content,
             inPre: false,
-            inVPre: false
+            inVPre: false,
         }
     );
 }
@@ -182,13 +184,13 @@ function isEnd(context: ParserContext, ancestors: ElementNode[]) {
     if (!context.source || !context.source.length) {
         return true;
     }
-    
+
     // 处理 <div><span></div></span> 等情况
     for (let index = 0; index < ancestors.length; index++) {
         const parent = ancestors[index];
-        console.log('------ is end:', parent.tag, context.source);
+        console.log("------ is end:", parent.tag, context.source);
         if (parent && context.source.startsWith(`</${parent.tag}`)) {
-            console.log('+++++===+=+ is end:', parent.tag, context.source);
+            console.log("+++++===+=+ is end:", parent.tag, context.source);
             return true;
         }
     }
@@ -202,7 +204,7 @@ function advanceBy(context: ParserContext, count: number) {
 
     return {
         prevOffset,
-        offset: context.offset
+        offset: context.offset,
     };
 }
 
@@ -213,12 +215,12 @@ function createLoc(
 ) {
     return {
         start: {
-            offset: startOffset
+            offset: startOffset,
         },
         end: {
-            offset: context.offset
+            offset: context.offset,
         },
-        source: context.originalSource.substring(startOffset, endOffset)
+        source: context.originalSource.substring(startOffset, endOffset),
     };
 }
 
@@ -229,7 +231,7 @@ function advanceSpaces(context: ParserContext) {
     }
     return {
         prevOffset: context.offset,
-        offset: context.offset
+        offset: context.offset,
     };
 }
 
@@ -239,24 +241,24 @@ function advanceSpaces(context: ParserContext) {
  * @param context
  */
 function parseAttributes(context: ParserContext) {
-    console.log('parseAttributes:', context.source);
+    console.log("parseAttributes:", context.source);
     const props: Array<AttributeNode | DirectiveNode> = [];
     advanceSpaces(context);
-    console.log('parseAttributes space laster:', context.source);
+    console.log("parseAttributes space laster:", context.source);
     while (
         !context.source.startsWith(">") &&
         !context.source.startsWith("/>")
     ) {
         // name="name" :name="name" @name="" name='name'
         const match = /^[^\t\f\n\r />][^\t\f\n\r />=]*/.exec(context.source);
-        
+
         if (!match) {
             throw new Error("无法匹配");
             // break;
         }
         let startOffset = context.offset;
         let name = match[0];
-        console.log('+++ Attribute:', context.source, name);
+        console.log("+++ Attribute:", context.source, name);
         let value;
         let type = NodeTypes.ATTRIBUTE;
         advanceBy(context, name.length);
@@ -280,7 +282,7 @@ function parseAttributes(context: ParserContext) {
             advanceBy(context, 1);
         }
 
-        console.log('+++ Attribute step 2: ', context.source);
+        console.log("+++ Attribute step 2: ", context.source);
         if (!value) {
             // ="" 或 ='' 情况
             const quote = context.source[0];
@@ -295,7 +297,6 @@ function parseAttributes(context: ParserContext) {
                 } else {
                     // console.error("缺少引号");
                     throw new Error(name + "：缺少引号");
-                    
                 }
             } else {
                 // name=xxxx情况
@@ -313,9 +314,33 @@ function parseAttributes(context: ParserContext) {
             type: type,
             name,
             value,
-            loc: createLoc(context, startOffset, endOffset)
+            loc: createLoc(context, startOffset, endOffset),
         };
         props.push(node);
     }
     return props;
+}
+
+function parseText(context: ParserContext) {
+    const { source } = context;
+    let startOffset = context.offset;
+    let endIndex = source.length;
+    const ltIndex = source.indexOf("<");
+    const delimiterIndex = source.indexOf("{{");
+
+    if (ltIndex > -1 && ltIndex < endIndex) {
+        endIndex = ltIndex;
+    }
+    if (delimiterIndex > -1 && delimiterIndex < endIndex) {
+        endIndex = delimiterIndex;
+    }
+
+    const content = source.slice(0, endIndex);
+    advanceBy(context, content.length);
+    const node: TextNode = {
+        type: NodeTypes.TEXT,
+        content,
+        loc: createLoc(context, startOffset, context.offset),
+    };
+    return node;
 }
