@@ -1,5 +1,5 @@
 {
-    "name": "compiler-core",
+    "name": "@ue3/compiler-core",
     "version": "1.0.0",
     "description": "",
     "main": "index.js",
