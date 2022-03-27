@@ -56,14 +56,13 @@ export function parseChildren(
         if (mode === TextModes.DATA || mode === TextModes.RCDATA) {
             if (mode === TextModes.DATA && source[0] === "<") {
                 if (source[1] === "!" && source.startsWith("<!--")) {
-                    // <!--
                 } else if (
                     source[1] === "!" &&
                     source.startsWith("<![CDATA[")
                 ) {
-                    // CDATA
+                    // <!--
                 } else if (source[1] === "/") {
-                    // </
+                    // CDATA
                 } else if (/[a-z]/i.test(source[1])) {
                     // 标签
                     console.log("标签解析");
@@ -71,7 +70,7 @@ export function parseChildren(
                 }
             } else if (source.startsWith("{{")) {
                 // 解析插值
-                parseInterpolation(context);
+                node = parseInterpolation(context);
             }
         }
         advanceSpaces(context);
@@ -395,7 +394,7 @@ function decodeHtml(context: ParserContext, asAttr = false) {
             let name = "";
             let value;
             // 命名字符引用
-            if (/[0-9z-a]/i.test(context.source[1])) {
+            if (/[0-9a-z]/i.test(context.source[1])) {
                 if (!maxCRNameLength) {
                     maxCRNameLength = Object.keys(
                         namedCharacterReferences
