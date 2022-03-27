@@ -8,8 +8,9 @@ export const enum NodeTypes {
     ELEMENT,
     ATTRIBUTE,
     DIRECTIVE,
+    INTERPOLATION,
 
-    TEXT
+    TEXT,
 }
 
 declare type none = undefined | null;
@@ -28,7 +29,8 @@ export enum TextModes {
     DATA,
     RCDATA,
     RAWTEXT,
-    CDATA
+    CDATA,
+    INTERPOLATION,
 }
 
 export interface Position {
@@ -78,4 +80,9 @@ export interface ElementNode extends Node {
      * eg: <div />
      */
     isSelfClosing?: boolean;
+}
+
+export interface InterpolationNode extends Node {
+    type: NodeTypes.INTERPOLATION;
+    content: string | boolean | none;
 }

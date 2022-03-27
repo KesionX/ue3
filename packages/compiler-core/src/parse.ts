@@ -9,6 +9,7 @@ import {
     AttributeNode,
     DirectiveNode,
     ElementNode,
+    InterpolationNode,
     Node,
     NodeTypes,
     RootNode,
@@ -70,6 +71,7 @@ export function parseChildren(
                 }
             } else if (source.startsWith("{{")) {
                 // 解析插值
+                parseInterpolation(context);
             }
         }
         advanceSpaces(context);
@@ -358,9 +360,9 @@ const namedCharacterReferences: Record<string, string> = {
  * 1. 字符命令
  * 2. 数字字符
  * 3. 普通字符
- * @param context 
- * @param asAttr 
- * @returns 
+ * @param context
+ * @param asAttr
+ * @returns
  */
 function decodeHtml(context: ParserContext, asAttr = false) {
     let offset = 0;
@@ -437,4 +439,27 @@ function decodeHtml(context: ParserContext, asAttr = false) {
     }
 
     return decodedText;
+}
+
+function parseInterpolation(context: ParserContext) {
+    advanceSpaces(context);
+    const startOffset = context.offset;
+    advanceBy(context, "{{".length);
+    const closeIndex = context.source.indexOf("}}");
+    if (closeIndex < 0) {
+        throw new Error("parseInterpolation 缺少结束符");
+    }
+
+    const content = context.source.slice(0, closeIndex);
+    advanceBy(context, content.length);
+    advanceSpaces(context);
+    advanceBy(context, "}}".length);
+
+    const node: InterpolationNode = {
+        type: NodeTypes.INTERPOLATION,
+        content,
+        loc: createLoc(context, startOffset, context.offset),
+    };
+
+    return node;
 }
