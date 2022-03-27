@@ -48,14 +48,11 @@ export function parseChildren(
 ) {
     const nodes: Node[] = [];
     const { mode, source } = context;
-    console.log('mode, source', mode, source);
-    let  count = 0;
+    console.log('@@@@@@@mode, source', mode, source);
     while (!isEnd(context, ancestors)) {
         let node: Node | null = null;
         if (mode === TextModes.DATA || mode === TextModes.RCDATA) {
-            console.log('====');
             if (mode === TextModes.DATA && source[0] === "<") {
-                console.log('<<<<<', source[1]);
                 if (source[1] === "!" && source.startsWith("<!--")) {
                     // <!--
                 } else if (
@@ -74,15 +71,11 @@ export function parseChildren(
                 // 解析插值
             }
         }
-
+        advanceSpaces(context);
         if (!node) {
             // 空文本
         }
         node && nodes.push(node);
-        if (count > 3) {
-            break;
-        }
-        count++;
     }
     return nodes;
 }
@@ -110,7 +103,6 @@ function parseELement(context: ParserContext, ancestors: ElementNode[]) {
     ancestors.push(element);
     element.children = parseChildren(context, ancestors);
     ancestors.pop();
-
     if (context.source.startsWith(`</${element.tag}`)) {
         parseTag(context, true);
         const endOffset = context.offset;
@@ -118,7 +110,7 @@ function parseELement(context: ParserContext, ancestors: ElementNode[]) {
     } else {
         console.warn(`缺少${element.tag}闭合标签`);
     }
-
+    console.log('------ return', element);
     return element;
 }
 
@@ -131,7 +123,7 @@ function parseELement(context: ParserContext, ancestors: ElementNode[]) {
  */
 function parseTag(context: ParserContext, end?: boolean) {
     let startOffset = -1;
-    console.log('pre')
+    console.log('pre', context.source)
     advanceSpaces(context);
     if (!end) {
         startOffset = context.offset;
@@ -140,7 +132,7 @@ function parseTag(context: ParserContext, end?: boolean) {
         ? /^<\/([a-z][^\t\r\n\f />]*)/i.exec(context.source)
         : /^<([a-z][^\t\r\n\f />]*)/i.exec(context.source);
     if (!match || match?.length < 2) {
-        throw new Error('没有匹配到tag:' + context.source);
+        throw new Error('没有匹配到tag:' + context.source + end);
     }
     // tag=xxx
     const tag = match[1];
@@ -190,10 +182,13 @@ function isEnd(context: ParserContext, ancestors: ElementNode[]) {
     if (!context.source || !context.source.length) {
         return true;
     }
+    
     // 处理 <div><span></div></span> 等情况
     for (let index = 0; index < ancestors.length; index++) {
         const parent = ancestors[index];
+        console.log('------ is end:', parent.tag, context.source);
         if (parent && context.source.startsWith(`</${parent.tag}`)) {
+            console.log('+++++===+=+ is end:', parent.tag, context.source);
             return true;
         }
     }
