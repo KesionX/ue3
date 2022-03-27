@@ -450,13 +450,19 @@ function parseInterpolation(context: ParserContext) {
     }
 
     const content = context.source.slice(0, closeIndex);
+    const expressionStartOffset = context.offset;
     advanceBy(context, content.length);
     advanceSpaces(context);
+    const expressionEndOffset = context.offset;
     advanceBy(context, "}}".length);
 
     const node: InterpolationNode = {
         type: NodeTypes.INTERPOLATION,
-        content,
+        content: {
+            type: NodeTypes.SIMPLE_EXPRESSION,
+            content: content,
+            loc: createLoc(context, expressionStartOffset, expressionEndOffset),
+        },
         loc: createLoc(context, startOffset, context.offset),
     };
 

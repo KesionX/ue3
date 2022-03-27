@@ -9,6 +9,7 @@ export const enum NodeTypes {
     ATTRIBUTE,
     DIRECTIVE,
     INTERPOLATION,
+    SIMPLE_EXPRESSION,
 
     TEXT,
 }
@@ -82,7 +83,11 @@ export interface ElementNode extends Node {
     isSelfClosing?: boolean;
 }
 
+export interface SimpleExpressionNode extends Node {
+    type: NodeTypes.SIMPLE_EXPRESSION
+    content: string
+}
 export interface InterpolationNode extends Node {
     type: NodeTypes.INTERPOLATION;
-    content: string | boolean | none;
+    content: SimpleExpressionNode;
 }
