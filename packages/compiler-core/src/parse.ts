@@ -75,7 +75,7 @@ export function parseChildren(
         advanceSpaces(context);
         if (!node) {
             // 空文本
-           node = parseText(context);
+            node = parseText(context);
         }
         node && nodes.push(node);
     }
@@ -343,4 +343,98 @@ function parseText(context: ParserContext) {
         loc: createLoc(context, startOffset, context.offset),
     };
     return node;
+}
+
+const namedCharacterReferences: Record<string, string> = {
+    gt: ">",
+    "gt;": ">",
+    lt: "<",
+    "lt;": "<",
+    "ltcc;": "<",
+};
+
+/**
+ * html字符解析
+ * 1. 字符命令
+ * 2. 数字字符
+ * 3. 普通字符
+ * @param context 
+ * @param asAttr 
+ * @returns 
+ */
+function decodeHtml(context: ParserContext, asAttr = false) {
+    let offset = 0;
+    // const rawText = context.source;
+    const end = context.source.length;
+    let decodedText = "";
+    let maxCRNameLength = 0;
+
+    function advance(length: number) {
+        advanceBy(context, length);
+        offset += length;
+    }
+
+    while (offset < end) {
+        // head[0] === '&', 命名字符引用
+        // head[0] === '&#'，数字字符引用
+        // head[0] === '&#x'，数字字符引用
+        const head = /&(?:#x?)?/i.exec(context.source);
+        if (!head) {
+            const remaining = end - offset;
+            decodedText += context.source.slice(0, remaining);
+            advance(remaining);
+            break;
+        }
+        // aaa &#xxxx => &#xxx
+        decodedText += context.source.slice(0, head.index);
+        advance(head.index);
+
+        if (head[0] === "&") {
+            let name = "";
+            let value;
+            // 命名字符引用
+            if (/[0-9z-a]/i.test(context.source[1])) {
+                if (!maxCRNameLength) {
+                    maxCRNameLength = Object.keys(
+                        namedCharacterReferences
+                    ).reduce((max, name) => {
+                        return Math.max(max, name.length);
+                    }, 0);
+                }
+
+                for (
+                    let length = maxCRNameLength;
+                    !value && length > 0;
+                    length--
+                ) {
+                    name = context.source.substring(1, length);
+                    value = namedCharacterReferences[name];
+                }
+
+                if (value) {
+                    const semi = name.endsWith(";");
+                    if (
+                        asAttr &&
+                        !semi &&
+                        /[=a-z0-9]/i.test(context.source[name.length + 1] || "")
+                    ) {
+                        decodedText += "&" + name;
+                        advance(1 + name.length);
+                    } else {
+                        decodedText += value;
+                        advance(1 + name.length);
+                    }
+                } else {
+                    decodedText += "&" + name;
+                    advance(1 + name.length);
+                }
+            } else {
+                // 普通文本
+                decodedText += "&";
+                advance(1);
+            }
+        }
+    }
+
+    return decodedText;
 }
